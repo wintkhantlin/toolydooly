@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { createUserSchema, loginUserSchema } from '@toolydooly/validation-schemas/auth';
+import { createUserSchema, forgetPasswordSchema, loginUserSchema } from '@toolydooly/validation-schemas/auth';
 import * as authService from './auth.service';
 
 export const createUser = async (req: Request, res: Response) => {
@@ -67,3 +67,37 @@ export const logout = async (req: Request, res: Response) => {
         message: "Logged out successfully",
     });
 };
+
+export const forgetPassword = async (req: Request, res: Response) => {
+    const parsed = await forgetPasswordSchema.safeParseAsync(req.body);
+
+    if (!parsed.success) {
+        return res.status(400).json({
+            status: "error",
+            message: parsed.error.issues
+        })
+    }
+
+    try {
+        const status = authService.createForgetPasswordSession(parsed.data.identifer);
+
+        if (!status) {
+            return res.status(400).json({
+                status: "error",
+                message: "Something went wrong"
+            })
+        }
+
+        return res.status(200).json({
+            status: "success",
+            message: "Request Mail Sent"
+        })
+    } catch (err) {
+        const message = err instanceof Error ? err.message : "Something went wrong";
+
+        return res.status(500).json({
+            status: "error",
+            message: message
+        })
+    }
+}
