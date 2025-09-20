@@ -1,14 +1,17 @@
 import type { UserSession } from "@/types/auth.type";
 import { defineStore } from "pinia";
-import { changePasswordSchema, createUserSchema, forgetPasswordSchema, loginUserSchema, resetPasswordSchema } from "@toolydooly/validation-schemas/auth";
+import { createUserSchema, forgetPasswordSchema, loginUserSchema, resetPasswordSchema } from "@toolydooly/validation-schemas/auth";
 import type z from "zod";
 import api from "@/lib/axios";
-import axios, { isAxiosError } from "axios";
+import axios from "axios";
+import { API_GATEWAY } from "@/constants";
+import { useRouter } from "vue-router";
 
 type Status = "loading" | "authenticated" | "unauthenticated";
 
 export const useAuth = defineStore("auth", {
     state: () => ({
+        _refreshAttempts: 0,
         user: null as UserSession | null,
         accessToken: undefined as string | undefined,
         status: "unauthenticated" as Status,
@@ -101,18 +104,22 @@ export const useAuth = defineStore("auth", {
 
         async refresh() {
             try {
-                const { data } = await api.get("/auth/refresh", { withCredentials: true });
+                const { data } = await axios.get("/auth/refresh", { withCredentials: true, baseURL: API_GATEWAY });
 
-                if (!data.access_token) {
-                    throw new Error("Refresh token failed");
-                }
+                if (!data.access_token) throw new Error("Refresh token failed");
 
                 this.accessToken = data.access_token;
                 localStorage.setItem("token", data.access_token);
+
                 return true;
             } catch (err) {
-                console.error("Failed to refresh token:", err);
-                await this.handleAuthError();
+                this.stopAutoFetch();
+                await this.logout(() => {
+                    const router = useRouter();
+
+                    router.push("/")
+                });
+
                 return false;
             }
         },
@@ -152,12 +159,14 @@ export const useAuth = defineStore("auth", {
         },
 
         async verifyResetSession(session: string) {
-            return await api.get("/auth/reset-password/" + session)
+            return await api.get("/auth/reset-password/" + session);
         },
 
         startAutoFetch() {
             if (this.fetchIntervalId || this.status !== "authenticated") return;
-            this.fetchIntervalId = setInterval(() => this.fetchUser(), 15000);
+            this.fetchIntervalId = setInterval(() => {
+                if (this.status === "authenticated") this.fetchUser();
+            }, 15000);
         },
 
         stopAutoFetch() {
