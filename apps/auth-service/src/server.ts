@@ -15,24 +15,23 @@ export const createServer = (): Express => {
     .use(morgan("dev"))
     .use(cors({
       origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
-          callback(null, true);
-        } else {
-          callback(new Error("Not allowed by CORS"));
-        }
+        if (!origin || allowedOrigins.includes(origin)) callback(null, true);
+        else callback(new Error("Not allowed by CORS"));
       },
       credentials: true
     }))
     .use(bodyParser.urlencoded({ extended: true }))
     .use(express.json())
-    .use(cookieParser())
-    .post("/create-user", createUser)
-    .post("/login", loginUser)
-    .post("/forget-password", forgetPassword)
-    .get("/reset-password/:id", verifyResetPasswordSession)
-    .put("/reset-password", resetPasswordController)
-    .get("/session", AuthMiddleware, verify)
-    .get("/refresh", refresh)
-    .get("/logout", logout)
+    .use(cookieParser());
+
+  app.post("/create-user", createUser);
+  app.post("/login", loginUser);
+  app.post("/forget-password", forgetPassword);
+  app.get("/reset-password/:id", verifyResetPasswordSession);
+  app.put("/reset-password", resetPasswordController);
+  app.get("/session", AuthMiddleware, verify);
+  app.get("/refresh", refresh);
+  app.get("/logout", logout);
+
   return app;
 };
