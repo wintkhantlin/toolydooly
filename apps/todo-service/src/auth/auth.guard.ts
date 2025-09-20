@@ -11,7 +11,7 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException('Missing authorization header');
     }
 
-    const url = process.env.NODE_ENV === "production" ? "http://auth_service:3002": "http://localhost:3002";
+    const url = process.env.AUTH_SERVICE ?? "http://localhost:3002";
 
     const AUTH_SERVICE_GET_SESSION = url + '/session';
 

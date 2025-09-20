@@ -41,7 +41,7 @@ const form = useForm({
                     <h1 class="text-4xl font-bold">Create User</h1>
                     <p class="text-sm text-gray-800">
                         Already Have Account?
-                        <a href="/auth/sign-in" class="underline text-teal-600">Login Here</a>
+                        <RouterLink to="/auth/sign-in" class="underline text-teal-600">Login Here</RouterLink>
                     </p>
                 </div>
 

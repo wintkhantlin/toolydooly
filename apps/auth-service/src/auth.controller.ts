@@ -1,6 +1,8 @@
 import type { Request, Response } from 'express';
-import { createUserSchema, forgetPasswordSchema, loginUserSchema } from '@toolydooly/validation-schemas/auth';
+import { createUserSchema, forgetPasswordSchema, loginUserSchema, changePasswordSchema, resetPasswordSchema } from '@toolydooly/validation-schemas/auth';
 import * as authService from './auth.service';
+import { ZodError } from 'zod';
+import { z } from 'zod/mini';
 
 export const createUser = async (req: Request, res: Response) => {
     const parsed = await createUserSchema.safeParseAsync(req.body);
@@ -79,7 +81,7 @@ export const forgetPassword = async (req: Request, res: Response) => {
     }
 
     try {
-        const status = authService.createForgetPasswordSession(parsed.data.identifer);
+        const status = await authService.createForgetPasswordSession(parsed.data.identifier);
 
         if (!status) {
             return res.status(400).json({
@@ -101,3 +103,39 @@ export const forgetPassword = async (req: Request, res: Response) => {
         })
     }
 }
+
+export const verifyResetPasswordSession = async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    if (!id) return res.status(404).json({
+        status: "error",
+        message: "Session ID is required"
+    });
+
+    const session = await authService.verifyResetPasswordSession(id);
+
+    if (!session) return res.status(404).json({
+        status: "error",
+        message: "Reset Password Session not found"
+    });
+
+    return res.status(200).json({
+        status: "success",
+        message: "Session found"
+    })
+}
+
+export const resetPasswordController = async (req: Request, res: Response) => {
+    try {
+        const { sessionId, newPassword } = resetPasswordSchema.parse(req.body);
+
+        await authService.resetPassword(sessionId, newPassword);
+
+        res.status(200).json({ message: "Password has been reset successfully" });
+    } catch (error) {
+        if (error instanceof ZodError) {
+            return res.status(400).json({ errors: z.treeifyError(error) });
+        }
+        res.status(400).json({ message: error instanceof Error ? error.message : "Failed to reset password" });
+    }
+};

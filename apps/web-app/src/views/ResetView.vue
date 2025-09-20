@@ -2,32 +2,43 @@
 import { ref } from 'vue'
 import { EyeClosedIcon, EyeOpenIcon } from '@radix-icons/vue'
 import { useForm } from '@tanstack/vue-form'
-import { loginUserSchema } from '@toolydooly/validation-schemas/auth'
+import { changePasswordSchema } from '@toolydooly/validation-schemas/auth' // create a schema for password + confirmPassword
 import { useAuth } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 import { Toaster, toast } from 'vue-sonner'
 
 import 'vue-sonner/style.css'
+import { useUrlSearchParams } from '@vueuse/core'
 
 const showPassword = ref(false)
+const showConfirmPassword = ref(false)
 
-const auth = useAuth();
-const { push } = useRouter();
+const auth = useAuth()
+const { push } = useRouter()
 
 const form = useForm({
     defaultValues: {
-        usernameOrEmail: '',
         password: '',
+        confirmPassword: '',
     },
     validators: {
-        onSubmit: loginUserSchema,
+        onSubmit: changePasswordSchema,
     },
     onSubmit: async ({ value }) => {
         try {
-            await auth.login(value)
-            await push("/")
-        } catch (error) {
-            toast.error(error instanceof Error ? error.message : "Login failed")
+            const params = useUrlSearchParams();
+
+            await auth.changePassword({
+                newPassword: value.password,
+                sessionId: params.id as string
+            })
+            toast.success("Password changed successfully")
+            
+            setTimeout(() => {
+                push("/")
+            })
+        } catch {
+            toast.error("Invalid or expired session")
         }
     }
 })
@@ -38,34 +49,15 @@ const form = useForm({
         <div class="w-full flex items-center justify-center">
             <div class="bg-white py-6 px-10 border border-gray-500/20 rounded-xl max-w-[500px] w-full">
                 <div class="space-y-3 mt-2 mb-6">
-                    <h1 class="text-4xl font-bold">Login</h1>
-                    <p class="text-sm text-gray-800">
-                        Need an Account?
-                        <RouterLink to="/auth/create-user" class="underline text-teal-600">Create an Account</RouterLink>
-                    </p>
+                    <h1 class="text-4xl font-bold">Change Password</h1>
                 </div>
 
                 <form @submit.prevent="form.handleSubmit" class="space-y-5 mb-4">
                     <div>
-                        <form.Field name="usernameOrEmail">
-                            <template v-slot="{ field }">
-                                <label :for="field.name" class="text-sm block mb-1">Username Or Email</label>
-                                <input :id="field.name" :name="field.name" type="text"
-                                    @input="(e) => field.handleChange((e.target as HTMLInputElement).value)"
-                                    placeholder="johndoe or johndoe@mail.com" autocomplete="email"
-                                    class="block px-4 py-3 border border-gray-200 w-full outline-teal-400 rounded mt-1" />
-                                <em role="alert" class="text-red-500"
-                                    v-if="!field.state.meta.isValid">{{field.state.meta.errors.map((err) =>
-                                        err?.message).join(", ")}}</em>
-                            </template>
-                        </form.Field>
-                    </div>
-
-                    <div>
                         <form.Field name="password">
                             <template v-slot="{ field }">
                                 <div class="flex justify-between items-center mb-1">
-                                    <label :for="field.name" class="text-sm block">Password</label>
+                                    <label :for="field.name" class="text-sm block">New Password</label>
                                     <button type="button" class="text-sm flex items-center gap-1"
                                         @click="showPassword = !showPassword">
                                         <component :is="showPassword ? EyeOpenIcon : EyeClosedIcon" />
@@ -74,10 +66,33 @@ const form = useForm({
                                 </div>
                                 <input :id="field.name" :name="field.name" :type="showPassword ? 'text' : 'password'"
                                     @input="(e) => field.handleChange((e.target as HTMLInputElement).value)"
-                                    placeholder="********" autocomplete="current-password"
+                                    placeholder="********" autocomplete="new-password"
                                     class="block px-4 py-3 border border-gray-200 w-full outline-teal-400 rounded mt-1" />
                                 <em role="alert" class="text-red-500"
-                                    v-if="!field.state.meta.isValid">{{field.state.meta.errors.map((err) =>
+                                    v-if="!field.state.meta.isValid">{{field.state.meta.errors.map(err =>
+                                        err?.message).join(", ")}}</em>
+                            </template>
+                        </form.Field>
+                    </div>
+
+                    <div>
+                        <form.Field name="confirmPassword">
+                            <template v-slot="{ field }">
+                                <div class="flex justify-between items-center mb-1">
+                                    <label :for="field.name" class="text-sm block">Confirm Password</label>
+                                    <button type="button" class="text-sm flex items-center gap-1"
+                                        @click="showConfirmPassword = !showConfirmPassword">
+                                        <component :is="showConfirmPassword ? EyeOpenIcon : EyeClosedIcon" />
+                                        {{ showConfirmPassword ? 'Hide' : 'Show' }}
+                                    </button>
+                                </div>
+                                <input :id="field.name" :name="field.name"
+                                    :type="showConfirmPassword ? 'text' : 'password'"
+                                    @input="(e) => field.handleChange((e.target as HTMLInputElement).value)"
+                                    placeholder="********" autocomplete="new-password"
+                                    class="block px-4 py-3 border border-gray-200 w-full outline-teal-400 rounded mt-1" />
+                                <em role="alert" class="text-red-500"
+                                    v-if="!field.state.meta.isValid">{{field.state.meta.errors.map(err =>
                                         err?.message).join(", ")}}</em>
                             </template>
                         </form.Field>
@@ -85,12 +100,9 @@ const form = useForm({
 
                     <form.Subscribe>
                         <template v-slot="{ canSubmit, isSubmitting }">
-                            <RouterLink to="/auth/request-password-reset" class="text-teal-500 underline">
-                                Forget Password? Reset Here
-                            </RouterLink>
                             <button type="submit" :disabled="isSubmitting || !canSubmit"
                                 class="w-full bg-teal-600 text-white py-3 rounded-full cursor-pointer hover:bg-teal-700 active:bg-teal-800 transition duration-100 mt-4">
-                                Login
+                                Change Password
                             </button>
                         </template>
                     </form.Subscribe>

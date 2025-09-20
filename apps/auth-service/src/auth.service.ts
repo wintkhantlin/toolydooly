@@ -25,7 +25,7 @@ export const registerUser = async (username: string, email: string, password: st
 export const loginUser = async (identifier: string, password: string) => {
     const user = await userRepo.findUserByIdentifier(identifier);
     if (!user) throw new Error("User not found");
-    if (!(await compare(password, user.password))) throw new Error("Password Mismatch")
+    if (!(await compare(password, user.password))) throw new Error("Password Mismatch");
 
     await cache.setCache(identifier, { uid: user.uid, username: user.username, email: user.email });
 
@@ -38,9 +38,7 @@ export const loginUser = async (identifier: string, password: string) => {
 
 export const refreshUserToken = async (token: string) => {
     const payload = verifyRefreshToken(token);
-    if (!payload || !payload.sub) {
-        throw new Error("Invalid refresh token");
-    }
+    if (!payload || !payload.sub) throw new Error("Invalid refresh token");
 
     const userId = payload.sub.toString();
 
@@ -57,9 +55,7 @@ export const refreshUserToken = async (token: string) => {
         });
     }
 
-    const accessToken = signAccessToken(user.uid);
-
-    return accessToken;
+    return signAccessToken(user.uid);
 };
 
 export const createForgetPasswordSession = async (identifier: string): Promise<boolean> => {
@@ -68,12 +64,9 @@ export const createForgetPasswordSession = async (identifier: string): Promise<b
 
     const session = generateSessionToken();
 
-    await redisClient.set(`reset:${session}`, user.uid, {
-        EX: 900
-    });
+    await redisClient.set(`reset:${session}`, user.uid, { EX: 900 });
 
     const channel = await connectToQueue();
-
     const queueResponse = channel.sendToQueue(
         "mailing_queue",
         Buffer.from(
@@ -92,3 +85,23 @@ export const createForgetPasswordSession = async (identifier: string): Promise<b
 };
 
 export const generateSessionToken = (): string => randomBytes(32).toString("base64url");
+
+export const terminateResetPasswordSession = async (sessionId: string) => {
+    await redisClient.del(`reset:${sessionId}`);
+};
+
+export const verifyResetPasswordSession = async (sessionId: string) => {
+    const value = await redisClient.get(`reset:${sessionId}`);
+    return value;
+};
+
+export const resetPassword = async (sessionId: string, newPassword: string) => {
+    const userId = await verifyResetPasswordSession(sessionId);
+    if (!userId) throw new Error("Invalid or expired session");
+
+    const hashedPassword = await hash(newPassword, 12);
+    await userRepo.updateUserPassword(userId, hashedPassword);
+    await terminateResetPasswordSession(sessionId);
+
+    return true;
+};

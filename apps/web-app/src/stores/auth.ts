@@ -1,9 +1,9 @@
 import type { UserSession } from "@/types/auth.type";
 import { defineStore } from "pinia";
-import { createUserSchema, loginUserSchema } from "@toolydooly/validation-schemas/auth";
+import { changePasswordSchema, createUserSchema, forgetPasswordSchema, loginUserSchema, resetPasswordSchema } from "@toolydooly/validation-schemas/auth";
 import type z from "zod";
 import api from "@/lib/axios";
-import axios from "axios";
+import axios, { isAxiosError } from "axios";
 
 type Status = "loading" | "authenticated" | "unauthenticated";
 
@@ -43,7 +43,7 @@ export const useAuth = defineStore("auth", {
                 await this.handleAuthSuccess(data.access_token, onSuccess);
                 return this.user;
             } catch (err) {
-                if(axios.isAxiosError(err)) {
+                if (axios.isAxiosError(err)) {
                     const msg = err?.response?.data?.message || err.message || "Login failed";
                     throw new Error(msg);
                 }
@@ -63,7 +63,7 @@ export const useAuth = defineStore("auth", {
 
                 return this.user;
             } catch (err) {
-                if(axios.isAxiosError(err)) {
+                if (axios.isAxiosError(err)) {
                     const msg = err?.response?.data?.message || err.message || "Login failed";
                     throw new Error(msg);
                 }
@@ -141,6 +141,18 @@ export const useAuth = defineStore("auth", {
             } else {
                 this.status = "unauthenticated";
             }
+        },
+
+        async requestResetPassword(body: z.infer<typeof forgetPasswordSchema>) {
+            await api.post("/auth/forget-password", body);
+        },
+
+        async changePassword(body: z.infer<typeof resetPasswordSchema>) {
+            await api.put("/auth/reset-password", body)
+        },
+
+        async verifyResetSession(session: string) {
+            return await api.get("/auth/reset-password/" + session)
         },
 
         startAutoFetch() {

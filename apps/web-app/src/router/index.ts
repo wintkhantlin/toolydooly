@@ -20,11 +20,47 @@ const router = createRouter({
             }
         },
         {
+            path: "/auth/request-password-reset",
+            name: 'request-password-reset',
+            component: async () => await import("@/views/RequestPasswordReset.vue"),
+            meta: {
+                title: "Request Password Reset - ToolyDooly"
+            }
+        },
+        {
+            path: "/auth/reset",
+            name: 'reset-password',
+            beforeEnter: async ({ query }) => {
+                const { verifyResetSession } = useAuth();
+                const { id } = query;
+
+                if (!id) return { path: '/auth/reset/404' };
+
+                try {
+                    await verifyResetSession(String(id));
+                } catch (e) {
+                    return { path: '/auth/reset/404' };
+                }
+            },
+            component: async () => await import("@/views/ResetView.vue"),
+            meta: {
+                title: "Reset Password - ToolyDooly"
+            }
+        },
+        {
             path: "/auth/create-user",
             name: 'create-user',
             component: async () => await import("@/views/CreateUserView.vue"),
             meta: {
                 title: "Create User - ToolyDooly"
+            }
+        },
+        {
+            path: '/:catchAll(.*)',
+            name: "not-found",
+            component: async () => await import("@/views/PageNotFoundView.vue"),
+            meta: {
+                title: "Error 404 - Toolydooly"
             }
         }
     ],

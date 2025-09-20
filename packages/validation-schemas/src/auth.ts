@@ -16,5 +16,20 @@ export const loginUserSchema = z.object({
 });
 
 export const forgetPasswordSchema = z.object({
-  identifer: z.string().min(3).max(255).transform((value) => value.toLowerCase())
+  identifier: z.string().min(3).max(255).transform((value) => value.toLowerCase())
 })
+
+export const changePasswordSchema = z.object({
+  password: z
+    .string()
+    .min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string(),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+})
+
+export const resetPasswordSchema = z.object({
+  sessionId: z.string().min(1, "Session ID is required"),
+  newPassword: z.string().min(8, "Password must be at least 8 characters")
+});

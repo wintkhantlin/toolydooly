@@ -11,3 +11,6 @@ export const findUserById = (uid: string) =>
 export const createUser = (user: Partial<User>) =>
     db("users").insert(user).returning("*");
 
+export const updateUserPassword = (id: string, password: string) => db("users").where('uid', "=", id).update({
+    password
+}).returning("*")
