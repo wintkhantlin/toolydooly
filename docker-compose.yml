@@ -112,6 +112,14 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - app_network
+    
+  smtp:
+    image: mailhog/mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - app_network
 
 networks:
   app_network:
