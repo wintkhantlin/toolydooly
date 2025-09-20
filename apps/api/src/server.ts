@@ -5,7 +5,7 @@ import cors from "cors";
 import { createProxyMiddleware, fixRequestBody } from 'http-proxy-middleware';
 import cookieParser from 'cookie-parser';
 
-const allowedOrigins = ["http://localhost:4173", "http://localhost:5173"];
+const allowedOrigin = process.env.FRONTEND_URL;
 
 export const createServer = (): Express => {
   const app = express();
@@ -17,7 +17,7 @@ export const createServer = (): Express => {
     .use(express.json())
     .use(cors({
       origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (!origin || origin === allowedOrigin) {
           callback(null, true);
         } else {
           callback(new Error("Not allowed by CORS"));
