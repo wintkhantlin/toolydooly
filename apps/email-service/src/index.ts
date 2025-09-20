@@ -1,10 +1,12 @@
 import { connect } from 'amqplib';
 import { createTransport } from 'nodemailer';
 import { mailingQueueSchema } from '@toolydooly/validation-schemas/mailing';
+import resetPasswordTemplate from './templates/reset-password-template';
 
 async function bootstrap() {
-    const { QUEUE_URL } = process.env;
-    if (!QUEUE_URL) throw new Error("QUEUE_URL environment not found");
+    const { QUEUE_URL, FRONTEND_URL } = process.env;
+    if (!QUEUE_URL) throw new Error("QUEUE_URL environment variable not found");
+    if (!FRONTEND_URL) throw new Error("FRONTEND_URL environment variable not found")
 
     const connection = await connect(QUEUE_URL);
     const channel = await connection.createChannel();
@@ -34,15 +36,7 @@ async function bootstrap() {
             to: parsed.data.payload.to,
             from: "no-reply@toolydooly.local",
             subject: "Reset Your Toolydooly Password",
-            html: `
-    <div>
-        <h2 style="color: #007bff;">Toolydooly Password Reset</h2>
-        <p>Hi there,</p>
-        <p>We received a request to reset your password. Click the button below to proceed:</p>
-        <a href="${parsed.data.payload.session}" style="display: inline-block; padding: 12px 20px; margin: 15px 0; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px;">Reset Password</a>
-        <p>If you didn’t request this, you can safely ignore this email.</p>
-    </div>
-    `
+            html: resetPasswordTemplate({ username: parsed.data.payload.username, url: new URL(`/auth/reset?id=${parsed.data.payload.session}`, process.env.FRONTEND_URL).toString() })
         });
 
         channel.ack(msg);

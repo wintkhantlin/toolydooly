@@ -29,7 +29,7 @@ export const createServer = (): Express => {
     }))
     .use(cookieParser())
     .use("/auth", createProxyMiddleware({
-      target: env === "production" ? "http://auth_service:3002" : "http://localhost:3002",
+      target: process.env.AUTH_SERVICE ?? "http://localhost:3002",
       changeOrigin: true,
       proxyTimeout: 5000,
       timeout: 5000,
@@ -46,7 +46,7 @@ export const createServer = (): Express => {
       },
     }))
     .use("/todo", createProxyMiddleware({
-      target: env === "production" ? "http://todo_service:3003" : "http://localhost:3003",
+      target: process.env.TODO_SERVICE ?? "http://localhost:3003",
       changeOrigin: true,
       proxyTimeout: 5000,
       timeout: 5000,
