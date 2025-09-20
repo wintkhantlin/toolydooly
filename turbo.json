@@ -18,7 +18,7 @@
       "cache": false,
       "persistent": true,
       "dependsOn": ["^build"],
-      "env": ["AUTH_DATABASE_URL", "REDIS_HOST", "REDIS_PASSWORD", "QUEUE_URL", "TODO_DATABASE_URL"]
+      "env": ["AUTH_DATABASE_URL", "REDIS_HOST", "REDIS_PASSWORD", "QUEUE_URL", "TODO_DATABASE_URL", "FRONTEND_URL"]
     },
     "clean": {
       "cache": false,
