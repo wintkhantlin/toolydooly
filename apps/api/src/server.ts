@@ -7,8 +7,6 @@ import cookieParser from 'cookie-parser';
 
 const allowedOrigins = ["http://localhost:4173", "http://localhost:5173"];
 
-const env = process.env.NODE_ENV
-
 export const createServer = (): Express => {
   const app = express();
   app.set('trust proxy', true);
