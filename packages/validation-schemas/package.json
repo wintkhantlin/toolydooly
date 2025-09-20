@@ -23,9 +23,14 @@
       "default": "./dist/todo.js",
       "types": "./dist/todo.d.ts",
       "development": "./src/todo.ts"
+    },
+    "./mailing": {
+      "default": "./dist/mailing.js",
+      "types": "./dist/mailing.d.ts",
+      "development": "./src/mailing.ts"
     }
   },
   "dependencies": {
-    "@toolydooly/typescript-config": "*"
+    "@toolydooly/typescript-config": "workspace:*"
   }
 }
