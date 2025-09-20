@@ -3,14 +3,14 @@ services:
     container_name: api
     build:
       context: .
-      dockerfile: ./apps/api/Dockerfile
+      dockerfile: ./apps/api/dockerfile
     restart: no
     ports:
       - "3001:3001"
     networks:
       - app_network
     environment:
-      - NODE_ENV=production
+      - node_env=production
 
   auth_service:
     container_name: auth_service
@@ -41,6 +41,8 @@ services:
     environment:
       - TODO_DATABASE_URL=mongodb://todo_user:todo_pass@todo_db:27017/todo_db?authSource=admin
       - NODE_ENV=production
+      - AUTH_SERVICE=http://auth_service:3002
+      - TODO_SERVICE=http://todo_service:3003
       - QUEUE_URL=amqp://rabbitmq:rabbitmq@rabbitmq:5672
     depends_on:
       - todo_db
@@ -69,6 +71,14 @@ services:
       - auth_db_data:/var/lib/postgresql/data
     networks:
       - app_network
+
+  email.svc:
+    container_name: email.svc
+    build: 
+      context: .
+      dockerfile: ./apps/email-service/Dockerfile
+      environment:
+        - FRONTEND_URL=http://localhost:4173
 
   todo_db:
     image: mongo:latest
