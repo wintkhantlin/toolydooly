@@ -44,6 +44,7 @@ export class TodoController {
             if (result?.error) throw new HttpException(result.error, result.status);
             return result;
         } catch (err) {
+            console.error(err)
             throw new HttpException(`Failed to create todo: ${err.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -67,7 +68,6 @@ export class TodoController {
             throw new HttpException(`Failed to fetch todos: ${err.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
 
     @Put('toggle')
     @UseGuards(AuthGuard)
