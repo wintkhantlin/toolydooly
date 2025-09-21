@@ -89,7 +89,7 @@ export const useAuth = defineStore("auth", {
                         "Authorization": `Bearer ${this.accessToken}`
                     }
                 });
-                this.user = data;
+                this.user = data.data;
                 this.status = "authenticated";
                 if (onSuccess) onSuccess(data);
                 this.startAutoFetch();
