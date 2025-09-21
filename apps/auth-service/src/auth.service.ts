@@ -5,7 +5,7 @@ import { signAccessToken, signRefreshToken, verifyRefreshToken } from "./libs/jw
 import { randomBytes } from "crypto";
 import redisClient from "./libs/redis";
 import { connectToQueue } from "./libs/mailing.queue";
-import { mailingQueueSchema } from "@toolydooly/validation-schemas/mailing";
+import { loginAlertQueueSchema, mailingQueueSchema } from "@toolydooly/validation-schemas/mailing";
 import { z } from "zod/mini";
 import { JwtPayload } from "jsonwebtoken";
 
@@ -19,6 +19,19 @@ export const registerUser = async (username: string, email: string, password: st
 
     return { user, accessToken: signAccessToken(user.uid), refreshToken: signRefreshToken(user.uid) };
 };
+
+export const emitLoginAlertToMailingQueue = async ({ timestamp, to, user_info } : { timestamp: Date, to: string, user_info: string }) => {
+    const channel = await connectToQueue()
+
+    channel.sendToQueue("mailing_queue", Buffer.from(JSON.stringify({
+        action: "login_alert",
+        payload: {
+            timestamp,
+            to,
+            user_info
+        }
+    } satisfies z.infer<typeof loginAlertQueueSchema>)));
+}
 
 export const loginUser = async (identifier: string, password: string) => {
     const user = await userRepo.findUserByIdentifier(identifier);

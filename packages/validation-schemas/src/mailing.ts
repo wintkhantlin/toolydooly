@@ -9,6 +9,16 @@ export const forgetPasswordQueueSchema = z.object({
     })
 });
 
+export const loginAlertQueueSchema = z.object({
+    action: z.literal("login_alert"),
+    payload: z.object({
+        to: z.email(),
+        user_info: z.string().max(300),
+        timestamp: z.string().transform(str => new Date(str))
+    })
+})
+
 export const mailingQueueSchema = z.union([
     forgetPasswordQueueSchema,
+    loginAlertQueueSchema
 ])

@@ -16,12 +16,39 @@ export const createUser = async (req: Request, res: Response) => {
     }
 };
 
+function getBrowserInfo(ua: string) {
+    let browser = "Unknown";
+    let os = "Unknown";
+
+    if (ua.includes("Chrome") && !ua.includes("Edg")) browser = "Chrome";
+    else if (ua.includes("Firefox")) browser = "Firefox";
+    else if (ua.includes("Safari") && !ua.includes("Chrome")) browser = "Safari";
+    else if (ua.includes("Edg")) browser = "Edge";
+
+    if (ua.includes("Win")) os = "Windows";
+    else if (ua.includes("Mac")) os = "MacOS";
+    else if (ua.includes("Linux")) os = "Linux";
+    else if (ua.includes("Android")) os = "Android";
+    else if (ua.includes("iPhone") || ua.includes("iPad")) os = "iOS";
+
+    return `Browser: ${browser}, OS: ${os}`;
+}
+
 export const loginUser = async (req: Request, res: Response) => {
     const parsed = await loginUserSchema.safeParseAsync(req.body);
-    if (!parsed.success) return res.status(400).json({ status: "error", message: parsed.error.format() });
+    if (!parsed.success) return res.status(400).json({ status: "error", message: parsed.error });
 
     try {
         const { user, accessToken, refreshToken } = await authService.loginUser(parsed.data.usernameOrEmail, parsed.data.password);
+        
+        authService.emitLoginAlertToMailingQueue({
+            timestamp: new Date(),
+            to: user.email,
+            user_info: req.headers["user-agent"]
+                ? getBrowserInfo(req.headers["user-agent"])
+                : "Unknown"
+        })
+
         res.cookie("refresh_token", refreshToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: "none", secure: true });
         res.status(200).json({ status: "success", data: user, access_token: accessToken });
     } catch (err: any) {

@@ -2,6 +2,7 @@ import { connect } from 'amqplib';
 import { createTransport } from 'nodemailer';
 import { mailingQueueSchema } from '@toolydooly/validation-schemas/mailing';
 import resetPasswordTemplate from './templates/reset-password-template';
+import loginAlertTemplate from './templates/login-alert-template';
 
 async function bootstrap() {
     const { QUEUE_URL, FRONTEND_URL } = process.env;
@@ -24,23 +25,44 @@ async function bootstrap() {
 
     channel.consume("mailing_queue", async (msg) => {
         if (!msg) return;
+
         const content = msg.content.toString();
         const parsed = await mailingQueueSchema.safeParseAsync(JSON.parse(content));
 
         if (!parsed.success) {
             console.error("Invalid message:", parsed.error);
+            channel.ack(msg);
             return;
         }
 
-        await transporter.sendMail({
-            to: parsed.data.payload.to,
-            from: "no-reply@toolydooly.local",
-            subject: "Reset Your Toolydooly Password",
-            html: resetPasswordTemplate({ username: parsed.data.payload.username, url: new URL(`/auth/reset?id=${parsed.data.payload.session}`, process.env.FRONTEND_URL).toString() })
-        });
+        const data = parsed.data;
+
+        if (data.action === "forget_password") {
+            await transporter.sendMail({
+                to: data.payload.to,
+                from: "no-reply@toolydooly.local",
+                subject: "Reset Your Toolydooly Password",
+                html: resetPasswordTemplate({
+                    username: data.payload.username,
+                    url: new URL(`/auth/reset?id=${data.payload.session}`, FRONTEND_URL).toString()
+                })
+            });
+        } else if (data.action === "login_alert") {
+            await transporter.sendMail({
+                to: data.payload.to,
+                from: "no-reply@toolydooly.local",
+                subject: "Login Alert",
+                html: loginAlertTemplate({
+                    timestamp: data.payload.timestamp,
+                    user_info: data.payload.user_info,
+                    resetLink: new URL(`/auth/request-password-reset`, FRONTEND_URL).toString()
+                })
+            });
+        }
 
         channel.ack(msg);
     });
+
 }
 
 bootstrap();
