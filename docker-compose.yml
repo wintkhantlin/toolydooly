@@ -10,7 +10,14 @@ services:
     networks:
       - app_network
     environment:
-      - node_env=production
+      - FRONTEND_URL=http://localhost:4173
+      - AUTH_SERVICE=http://auth_service:3002
+      - TODO_SERVICE=http://todo_service:3003
+      - NODE_ENV=production
+    depends_on:
+      - auth_service
+      - todo_service
+      - email.svc
 
   auth_service:
     container_name: auth_service
@@ -21,6 +28,7 @@ services:
     networks:
       - app_network
     environment:
+      - FRONTEND_URL=http://localhost:4173
       - REDIS_HOST=redis
       - REDIS_PASSWORD=redis
       - NODE_ENV=production
@@ -28,6 +36,7 @@ services:
     depends_on:
       - auth_db
       - redis
+      - rabbitmq
     volumes:
       - ./keys:/app/keys:z
 
@@ -43,6 +52,7 @@ services:
       - NODE_ENV=production
       - AUTH_SERVICE=http://auth_service:3002
       - TODO_SERVICE=http://todo_service:3003
+      - FRONTEND_URL=http://localhost:4173/
       - QUEUE_URL=amqp://rabbitmq:rabbitmq@rabbitmq:5672
     depends_on:
       - todo_db
@@ -78,7 +88,10 @@ services:
       context: .
       dockerfile: ./apps/email-service/Dockerfile
     environment:
-        - FRONTEND_URL=http://localhost:4173
+      - QUEUE_URL=amqp://rabbitmq:rabbitmq@rabbitmq:5672
+      - FRONTEND_URL=http://localhost:4173
+    depends_on:
+      - rabbitmq
 
   todo_db:
     image: mongo:latest
