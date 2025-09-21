@@ -23,7 +23,6 @@
     "@toolydooly/validation-schemas": "*",
     "@vueuse/core": "^13.9.0",
     "axios": "^1.11.0",
-    "interpreter": "^0.1.0",
     "pinia": "^3.0.3",
     "radix-vue": "^1.9.17",
     "tailwindcss": "^4.1.12",

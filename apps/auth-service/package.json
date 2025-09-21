@@ -14,17 +14,18 @@
     "rollback": "knex --knexfile src/knexfile.ts migrate:rollback"
   },
   "dependencies": {
+    "@toolydooly/validation-schemas": "*",
     "amqplib": "^0.10.9",
     "bcryptjs": "^3.0.2",
     "body-parser": "^1.20.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "express": "^4.18.3",
+    "express-rate-limit": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "knex": "^3.1.0",
     "morgan": "^1.10.0",
     "pg": "^8.16.3",
-    "@toolydooly/validation-schemas": "*",
     "redis": "^5.8.2"
   },
   "devDependencies": {

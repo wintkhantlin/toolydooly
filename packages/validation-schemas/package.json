@@ -31,6 +31,6 @@
     }
   },
   "dependencies": {
-    "@toolydooly/typescript-config": "workspace:*"
+    "@toolydooly/typescript-config": "*"
   }
 }
