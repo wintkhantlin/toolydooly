@@ -33,6 +33,7 @@ services:
       - REDIS_PASSWORD=redis
       - NODE_ENV=production
       - AUTH_DATABASE_URL=postgres://auth_user:auth_pass@auth_db:5432/auth_db
+      - QUEUE_URL=amqp://rabbitmq:rabbitmq@rabbitmq:5672
     depends_on:
       - auth_db
       - redis
