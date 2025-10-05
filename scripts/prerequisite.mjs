@@ -34,36 +34,44 @@ function detectContainerEngine() {
   return { engine, compose };
 }
 
-function checkKeys() {
+function askQuestion(query) {
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    rl.question(query, (answer) => {
+      rl.close();
+      resolve(answer.trim().toLowerCase());
+    });
+  });
+}
+
+async function generateKeysIfNeeded() {
   const keysDir = path.join(process.cwd(), "keys");
   const privateKeyPath = path.join(keysDir, "private.key");
   const publicKeyPath = path.join(keysDir, "public.key");
 
-  if (!fs.existsSync(keysDir)) {
-    console.error("Error: keys/ directory does not exist.");
-    process.exit(1);
-  }
-
-  if (!fs.existsSync(privateKeyPath)) {
-    console.error("Error: private.key does not exist in keys/.");
-    process.exit(1);
-  }
-
-  if (!fs.existsSync(publicKeyPath)) {
-    console.error("Error: public.key does not exist in keys/.");
-    process.exit(1);
+  if (!fs.existsSync(keysDir) || !fs.existsSync(privateKeyPath) || !fs.existsSync(publicKeyPath)) {
+    const answer = await askQuestion("keys/ directory or keys missing. Generate new key pairs? (y/N): ");
+    if (answer === "y") {
+      try {
+        execSync(`bun run ${path.join(__dirname, "./generate-keypair.mjs")}`, { stdio: "inherit" });
+        console.log("Key pairs generated.");
+      } catch (err) {
+        console.error("Error generating keys:", err.message);
+        process.exit(1);
+      }
+    } else {
+      console.log("Skipping key generation. Exiting.");
+      process.exit(1);
+    }
   }
 
   try {
     const privateKey = fs.readFileSync(privateKeyPath, "utf8");
     const publicKey = fs.readFileSync(publicKeyPath, "utf8");
-
     const message = "test";
     const signature = crypto.sign("RSA-SHA512", Buffer.from(message), privateKey);
     const verified = crypto.verify("RSA-SHA512", Buffer.from(message), publicKey, signature);
-
     if (!verified) throw new Error("Key verification failed");
-
     console.log("Keys are valid for RS512.");
   } catch (err) {
     console.error("Error: Keys are not suitable for RS512:", err.message);
@@ -71,33 +79,26 @@ function checkKeys() {
   }
 }
 
-function promptMigrations() {
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-
-  rl.question("Do you want to run database migrations? (y/N): ", (answer) => {
-    const normalized = answer.trim().toLowerCase();
-    if (normalized === "y") {
-      try {
-        console.log("Running migrations...");
-        execSync("bun run migrate:auth", { stdio: "inherit" });
-        console.log("Migrations completed.");
-      } catch (err) {
-        console.error("Error running migrations:", err.message);
-        process.exit(1);
-      }
-    } else {
-      console.log("Skipping migrations.");
+async function runMigrations() {
+  const answer = await askQuestion("Do you want to run database migrations? (y/N): ");
+  if (answer === "y") {
+    try {
+      console.log("Running migrations...");
+      execSync("bun run migrate:auth", { stdio: "inherit" });
+      console.log("Migrations completed.");
+    } catch (err) {
+      console.error("Error running migrations:", err.message);
+      process.exit(1);
     }
-
-    rl.close();
-  });
+  } else {
+    console.log("Skipping migrations.");
+  }
 }
 
-detectContainerEngine();
-checkKeys();
-promptMigrations();
+async function main() {
+  detectContainerEngine();
+  await generateKeysIfNeeded();
+  await runMigrations();
+}
 
-console.log("OKAY")
+main();
