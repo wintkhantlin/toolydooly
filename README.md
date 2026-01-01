@@ -2,12 +2,6 @@
 
 A **Todo application** built with **NestJS**, **Express**, **Vue**, and **MongoDB**, running in a Dockerized microservice architecture. This app is still in progress and you can see the [ROADMAP](./ROADMAP.md) [https://roadmap.sh/projects/todo-list-api](https://roadmap.sh/projects/todo-list-api)
 
-> [!TIP]
-> The project is currently in **beta**. Current phase: **Local LLM with Chrome**. Check out the [LLM branch](https://github.com/happer64bit/toolydooly/tree/feat/llm) for the latest features. You can checkout that branch.
-
-
-*This is a verification of participation in Code2Career by the Japan-Myanmar Center, and this will be used in the portfolio of Win Khant Lin.*
-
 ---
 
 ## Generating Key Pair
