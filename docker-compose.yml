@@ -70,7 +70,7 @@ services:
       - app_network
 
   auth_db:
-    image: postgres:latest
+    image: postgres:18
     container_name: auth_db
     environment:
       POSTGRES_USER: auth_user
@@ -79,7 +79,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - auth_db_data:/var/lib/postgresql/data
+      - auth_db_data:/var/lib/postgresql
     networks:
       - app_network
 
@@ -138,7 +138,7 @@ services:
       - app_network
     
   smtp:
-    image: mailhog/mailhog
+    image: maildev/maildev
     ports:
       - "1025:1025"
       - "8025:8025"
