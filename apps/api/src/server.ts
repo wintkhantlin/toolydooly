@@ -59,6 +59,26 @@ export const createServer = (): Express => {
         },
       },
     }))
+    .use("/llm", createProxyMiddleware({
+      target: process.env.LLM_SERVICE ?? "http://localhost:3010",
+      changeOrigin: true,
+      proxyTimeout: 30000,
+      timeout: 30000,
+      autoRewrite: true,
+      pathRewrite: { '^/llm': '' },
+      on: {
+        proxyReq: (proxyReq, req) => {
+          // Forward Authorization header for authentication
+          if (req.headers.authorization) {
+            proxyReq.setHeader("authorization", req.headers.authorization);
+          }
+          if (req.headers.cookie) {
+            proxyReq.setHeader("cookie", req.headers.cookie);
+          }
+          fixRequestBody(proxyReq, req);
+        },
+      },
+    }))
 
   return app;
 };

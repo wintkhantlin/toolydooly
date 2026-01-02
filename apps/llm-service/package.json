@@ -1,0 +1,23 @@
+{
+  "name": "llm-service",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@toolydooly/typescript-config": "*"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "node:dev": "nodemon --exec \"node -r esbuild-register ./src/index.ts\" -e .ts",
+    "dev": "tsx --watch ./src/index.ts",
+    "start": "node -r esbuild-register ./src/index.ts"
+  },
+  "dependencies": {
+    "@toolydooly/validation-schemas": "*",
+    "openai": "^6.15.0"
+  }
+}

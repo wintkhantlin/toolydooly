@@ -3,6 +3,11 @@ import { createUserSchema, loginUserSchema, forgetPasswordSchema, resetPasswordS
 import * as authService from "./auth.service";
 import { ZodError } from "zod";
 
+const handleError = (res: Response, err: unknown, defaultStatus = 500) => {
+    const message = err instanceof Error ? err.message : "An unexpected error occurred";
+    res.status(defaultStatus).json({ status: "error", message });
+};
+
 export const createUser = async (req: Request, res: Response) => {
     const parsed = await createUserSchema.safeParseAsync(req.body);
     if (!parsed.success) return res.status(400).json({ status: "error", message: parsed.error.format() });
@@ -11,8 +16,8 @@ export const createUser = async (req: Request, res: Response) => {
         const { user, accessToken, refreshToken } = await authService.registerUser(parsed.data.username, parsed.data.email, parsed.data.password);
         res.cookie("refresh_token", refreshToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: "none", secure: true });
         res.status(201).json({ status: "success", data: user, access_token: accessToken });
-    } catch (err: any) {
-        res.status(409).json({ status: "error", message: err.message });
+    } catch (err) {
+        handleError(res, err, 409);
     }
 };
 
@@ -51,8 +56,8 @@ export const loginUser = async (req: Request, res: Response) => {
 
         res.cookie("refresh_token", refreshToken, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: "none", secure: true });
         res.status(200).json({ status: "success", data: user, access_token: accessToken });
-    } catch (err: any) {
-        res.status(401).json({ status: "error", message: err.message });
+    } catch (err) {
+        handleError(res, err, 401);
     }
 };
 
@@ -63,9 +68,9 @@ export const refresh = async (req: Request, res: Response) => {
     try {
         const accessToken = await authService.refreshUserToken(token);
         res.status(200).json({ status: "success", access_token: accessToken });
-    } catch (err: any) {
+    } catch (err) {
         res.clearCookie("refresh_token");
-        res.status(401).json({ status: "error", message: err.message });
+        handleError(res, err, 401);
     }
 };
 
@@ -81,8 +86,8 @@ export const forgetPassword = async (req: Request, res: Response) => {
     try {
         await authService.createForgetPasswordSession(parsed.data.identifier);
         res.status(200).json({ status: "success", message: "Request mail sent" });
-    } catch (err: any) {
-        res.status(500).json({ status: "error", message: err.message || "Something went wrong" });
+    } catch (err) {
+        handleError(res, err, 500);
     }
 };
 
@@ -93,7 +98,7 @@ export const resetPasswordController = async (req: Request, res: Response) => {
         res.status(200).json({ status: "success", message: "Password reset successfully", access_token: accessToken });
     } catch (error) {
         if (error instanceof ZodError) return res.status(400).json({ status: "error", message: error.format() });
-        res.status(400).json({ status: "error", message: error instanceof Error ? error.message : "Failed to reset password" });
+        handleError(res, error, 400);
     }
 };
 

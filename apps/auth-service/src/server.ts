@@ -11,7 +11,7 @@ const allowedOrigin = process.env.FRONTEND_URL;
 
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 200,
   message: "Too many requests, please try again later."
 });
 

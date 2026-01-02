@@ -2,15 +2,15 @@
 import BottomChatContainer from '@/components/BottomChatContainer.vue'
 import FilterTodo from '@/components/FilterTodo.vue'
 import TodoList from '@/components/TodoList.vue'
-import { useAuth } from '@/stores/auth'
+import NavBar from '@/components/NavBar.vue'
 import { useTodoQuery } from '@/composables/useTodoQuery'
 import { MagnifyingGlassIcon, ReloadIcon } from '@radix-icons/vue'
-import Menu from '@/components/Menu.vue'
 import { useDebounce } from '@/lib/debounce'
 import { useFilter } from '@/stores/filter'
 import { ref, watch } from 'vue'
+import { Toaster } from 'vue-sonner'
+import 'vue-sonner/style.css'
 
-const auth = useAuth()
 const { todoQuery, createTodoMutation } = useTodoQuery()
 const filter = useFilter()
 
@@ -24,42 +24,37 @@ watch(debouncedSearch, (val) => {
 </script>
 
 <template>
-    <header
-        class="sticky top-0 py-2 bg-gray-50 dark:bg-[#212121] dark:text-white z-50 border-b border-b-black/5 dark:border-b-white/10">
-        <div class="container mx-auto flex items-center justify-between">
-            <RouterLink to="/">
-                <h1 class="text-xl">ToolyDooly</h1>
-            </RouterLink>
-            <Menu />
-        </div>
-    </header>
+    <NavBar />
 
-    <div class="container mx-auto min-h-screen flex flex-col text-gray-900">
-        <main class="flex-1 pt-6">
-            <div class="relative w-full mb-2">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-black/50 dark:text-white/50">
-                    <MagnifyingGlassIcon />
-                </span>
-                <input type="text" v-model="search"
-                    class="w-full pl-10 pr-4 py-2 bg-neutral-100 dark:bg-zinc-800 dark:placeholder:text-gray-400 border border-black/5 dark:border-white/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 dark:text-white"
-                    placeholder="Search Todo">
+    <div class="container mx-auto min-h-screen flex flex-col text-gray-900 pb-24 px-4">
+        <main class="flex-1 pt-8">
+            <div class="flex flex-col sm:flex-row gap-4 mb-6">
+                <div class="relative flex-1">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-black/50 dark:text-white/50">
+                        <MagnifyingGlassIcon />
+                    </span>
+                    <input type="text" v-model="search"
+                        class="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-[#2f2f2f] dark:placeholder:text-gray-400 border border-black/5 dark:border-white/10 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 dark:text-white shadow-sm transition-all"
+                        placeholder="Search tasks...">
+                </div>
+                <div class="flex gap-2">
+                    <FilterTodo />
+                    <button @click="todoQuery.refetch()"
+                        class="bg-white dark:bg-[#2f2f2f] border border-black/5 dark:border-white/10 text-gray-700 dark:text-gray-200 flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-white/5 px-4 py-2.5 rounded-xl cursor-pointer shadow-sm transition-colors">
+                        <ReloadIcon :class="todoQuery.isFetching.value ? 'animate-spin' : ''" />
+                    </button>
+                </div>
             </div>
 
-            <div class="flex justify-between items-center mb-4 mt-2">
-                <FilterTodo />
-                <button @click="todoQuery.refetch()"
-                    class="text-blue-500 flex items-center gap-1 hover:bg-black/5 px-4 py-1.5 rounded-lg cursor-pointer">
-                    <ReloadIcon :class="todoQuery.isFetching.value ? 'animate-spin' : ''" />
-                    <span class="ml-2">Refresh</span>
-                </button>
-            </div>
             <TodoList />
         </main>
 
-        <footer
-            class="sticky bottom-0 left-0 w-full flex justify-center p-4 bg-gradient-to-b from-gray-50/10 to-gray-50 dark:from-[#212121]/10 dark:to-[#212121]">
-            <BottomChatContainer @submit="(event) => createTodoMutation.mutateAsync(event)"
-                :is-loading="createTodoMutation.isPending.value" />
+        <footer class="fixed bottom-0 left-0 w-full flex justify-center p-4 z-40 pointer-events-none">
+            <div class="pointer-events-auto w-full max-w-3xl">
+                <BottomChatContainer @submit="(event) => createTodoMutation.mutateAsync(event)"
+                    :is-loading="createTodoMutation.isPending.value" />
+            </div>
         </footer>
     </div>
+    <Toaster position="top-right" richColors />
 </template>

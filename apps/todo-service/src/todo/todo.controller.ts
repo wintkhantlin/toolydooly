@@ -6,6 +6,7 @@ import {
     HttpException,
     HttpStatus,
     Inject,
+    Logger,
     Post,
     Put,
     Query,
@@ -30,23 +31,35 @@ import { TodoService } from './todo.service';
 
 @Controller()
 export class TodoController {
+    private readonly logger = new Logger(TodoController.name);
+
     constructor(
         @Inject('RABBIT_MQ') private readonly rabbitClient: ClientProxy,
         private readonly todoService: TodoService,
     ) { }
 
+    private async sendCommand<T>(pattern: any, payload: any): Promise<T> {
+        try {
+            const result = await lastValueFrom(this.rabbitClient.send(pattern, payload));
+            if (result && typeof result === 'object' && 'error' in result) {
+                throw new HttpException(result.error, result.status || HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            return result as T;
+        } catch (err) {
+            if (err instanceof HttpException) throw err;
+            this.logger.error(`Command failed: ${JSON.stringify(pattern)}`, err instanceof Error ? err.stack : String(err));
+            throw new HttpException(
+                err instanceof Error ? err.message : 'Internal Server Error',
+                HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+    }
+
     @Post()
     @UseGuards(AuthGuard)
     async createTodo(@Body() createTodoDto: CreateTodoDto, @User() user: IUser) {
         const payload: CreateTodoQueueDto = { ...createTodoDto, user_id: user.uid };
-        try {
-            const result = await lastValueFrom(this.rabbitClient.send({ cmd: 'todo.create' }, payload));
-            if (result?.error) throw new HttpException(result.error, result.status);
-            return result;
-        } catch (err) {
-            console.error(err)
-            throw new HttpException(`Failed to create todo: ${err.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        return this.sendCommand({ cmd: 'todo.create' }, payload);
     }
 
     @Get()
@@ -56,71 +69,51 @@ export class TodoController {
         @Query('query') query: string | undefined,
         @User() user: IUser,
     ) {
-        const hideCompletedBool = hideCompleted === 'true';
-
         try {
             return await this.todoService.getTodos(
-                hideCompletedBool,
+                hideCompleted === 'true',
                 user.uid,
                 query
             );
-        } catch (err: any) {
-            throw new HttpException(`Failed to fetch todos: ${err.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (err) {
+            this.logger.error('Failed to fetch todos', err instanceof Error ? err.stack : String(err));
+            throw new HttpException(
+                `Failed to fetch todos: ${err instanceof Error ? err.message : String(err)}`,
+                HttpStatus.INTERNAL_SERVER_ERROR
+            );
         }
     }
 
     @Put('toggle')
     @UseGuards(AuthGuard)
     async toggleTodo(@User() user: IUser, @Body() body: ToggleTodoDTO) {
-        try {
-            const todo = await lastValueFrom(
-                this.rabbitClient.send(
-                    { cmd: 'todo.toggle_done' },
-                    { ...body, user_id: user.uid } as ToggleTodoQueuePayloadDto,
-                ),
-            );
-
-            if (todo?.error) throw new HttpException(todo.error, todo.status);
-            return todo;
-        } catch (err: any) {
-            throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        return this.sendCommand({ cmd: 'todo.toggle_done' }, { ...body, user_id: user.uid });
     }
 
     @Delete()
     @UseGuards(AuthGuard)
     async deleteTodo(@User() user: IUser, @Body() body: DeleteTodoDto) {
-        try {
-            const result = await lastValueFrom(
-                this.rabbitClient.send({ cmd: 'todo.delete' }, { ...body, user_id: user.uid } as DeleteTodoQueueDto),
-            );
-
-            if (result?.error) throw new HttpException(result.error, result.status);
-            return { success: true };
-        } catch (err) {
-            throw new HttpException(err.message, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        await this.sendCommand({ cmd: 'todo.delete' }, { ...body, user_id: user.uid });
+        return { success: true };
     }
 
     @Put()
     @UseGuards(AuthGuard)
     async updateTodo(@User() user: IUser, @Body() body: UpdateTodoDto) {
         const payload: UpdateTodoQueueDto = { ...body, user_id: user.uid };
-        try {
-            const result = await lastValueFrom(this.rabbitClient.send({ cmd: 'todo.update' }, payload));
-            if (result?.error) throw new HttpException(result.error, result.status);
-            return result;
-        } catch (err: any) {
-            throw new HttpException(`Failed to update todo: ${err.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        return this.sendCommand({ cmd: 'todo.update' }, payload);
     }
 
     @MessagePattern({ cmd: 'todo.create' })
     async handleCreateTodo(@Payload() payload: CreateTodoQueueDto) {
         try {
             return await this.todoService.createTodo(payload);
-        } catch (err: any) {
-            return { error: err.message, status: err.status || 500 };
+        } catch (err) {
+            this.logger.error('Error handling create todo message', err instanceof Error ? err.stack : String(err));
+            return { 
+                error: err instanceof Error ? err.message : 'Unknown error', 
+                status: (err as any).status || 500 
+            };
         }
     }
 
@@ -128,8 +121,12 @@ export class TodoController {
     async handleToggleTodoDone(@Payload() payload: ToggleTodoQueuePayloadDto) {
         try {
             return await this.todoService.toggleDone(payload.id, payload.user_id);
-        } catch (err: any) {
-            return { error: err.message, status: err.status || 500 };
+        } catch (err) {
+            this.logger.error('Error handling toggle todo message', err instanceof Error ? err.stack : String(err));
+            return { 
+                error: err instanceof Error ? err.message : 'Unknown error', 
+                status: (err as any).status || 500 
+            };
         }
     }
 
@@ -137,17 +134,26 @@ export class TodoController {
     async handleTodoDelete(@Payload() payload: DeleteTodoQueueDto) {
         try {
             return await this.todoService.deleteTodo(payload.id, payload.user_id);
-        } catch (err: any) {
-            return { error: err.message, status: err.status || 500 };
+        } catch (err) {
+            this.logger.error('Error handling delete todo message', err instanceof Error ? err.stack : String(err));
+            return { 
+                error: err instanceof Error ? err.message : 'Unknown error', 
+                status: (err as any).status || 500 
+            };
         }
     }
 
     @MessagePattern({ cmd: 'todo.update' })
     async handleUpdateTodo(@Payload() payload: UpdateTodoQueueDto) {
         try {
-            return await this.todoService.updateTodo(payload.id, payload.user_id, payload); // implement in service
-        } catch (err: any) {
-            return { error: err.message, status: err.status || 500 };
+            return await this.todoService.updateTodo(payload.id, payload.user_id, payload);
+        } catch (err) {
+            this.logger.error('Error handling update todo message', err instanceof Error ? err.stack : String(err));
+            return { 
+                error: err instanceof Error ? err.message : 'Unknown error', 
+                status: (err as any).status || 500 
+            };
         }
     }
 }
+

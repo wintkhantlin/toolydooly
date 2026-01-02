@@ -79,7 +79,7 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - auth_db_data:/var/lib/postgresql
+      - toolydooly_auth_db_data:/var/lib/postgresql
     networks:
       - app_network
 
@@ -150,7 +150,7 @@ networks:
     driver: bridge
 
 volumes:
-  auth_db_data:
+  toolydooly_auth_db_data:
   todo_db_data:
   redis_data:
   rabbitmq_data:

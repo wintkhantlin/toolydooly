@@ -2,7 +2,7 @@ import knex from "knex";
 import config from "./knexfile";
 import { User } from "./types/knex";
 
-const db = knex(config);
+export const db = knex(config);
 
 export const findUserByIdentifier = (identifier: string): Promise<User | undefined> =>
     db<User>("users")

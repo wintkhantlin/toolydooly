@@ -23,9 +23,9 @@ const hideCompleted = computed({
 <template>
     <PopoverRoot>
         <PopoverTrigger
-            class="text-blue-500 flex items-center gap-1 hover:bg-black/5 px-4 py-1.5 rounded-lg cursor-pointer">
+            class="bg-white dark:bg-[#2f2f2f] border border-black/5 dark:border-white/10 text-gray-700 dark:text-gray-200 flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-white/5 px-4 py-2.5 rounded-xl cursor-pointer shadow-sm transition-colors">
             <CaretSortIcon />
-            <span class="ml-2">Filter Todo</span>
+            <span class="ml-2">Filter</span>
         </PopoverTrigger>
         <PopoverPortal>
             <PopoverContent

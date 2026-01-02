@@ -14,6 +14,11 @@
     "build": "tsc"
   },
   "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "development": "./src/index.ts"
+    },
     "./auth": {
       "default": "./dist/auth.js",
       "types": "./dist/auth.d.ts",
@@ -28,9 +33,15 @@
       "default": "./dist/mailing.js",
       "types": "./dist/mailing.d.ts",
       "development": "./src/mailing.ts"
+    },
+    "./llm": {
+      "default": "./dist/llm.js",
+      "types": "./dist/llm.d.ts",
+      "development": "./src/llm.ts"
     }
   },
   "dependencies": {
-    "@toolydooly/typescript-config": "*"
+    "@toolydooly/typescript-config": "*",
+    "zod": "^4.3.4"
   }
 }

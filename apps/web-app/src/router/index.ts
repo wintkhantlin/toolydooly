@@ -38,7 +38,7 @@ const router = createRouter({
 
                 try {
                     await verifyResetSession(String(id));
-                } catch (e) {
+                } catch {
                     return { path: '/auth/reset/404' };
                 }
             },
