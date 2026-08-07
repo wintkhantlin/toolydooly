@@ -1,156 +1,176 @@
-services:
-  api:
-    container_name: api
-    build:
-      context: .
-      dockerfile: ./apps/api/Dockerfile
-    restart: no
-    ports:
-      - "3001:3001"
-    networks:
-      - app_network
-    environment:
-      - FRONTEND_URL=http://localhost:4173
-      - AUTH_SERVICE=http://auth_service:3002
-      - TODO_SERVICE=http://todo_service:3003
-      - NODE_ENV=production
-    depends_on:
-      - auth_service
-      - todo_service
-      - email.svc
+# services:
+#   api:
+#     container_name: api
+#     build:
+#       context: .
+#       dockerfile: ./apps/api/Dockerfile
+#     restart: no
+#     ports:
+#       - "3001:3001"
+#     networks:
+#       - app_network
+#     environment:
+#       - FRONTEND_URL=http://localhost:4173
+#       - AUTH_SERVICE=http://auth_service:3002
+#       - TODO_SERVICE=http://todo_service:3003
+#       - NODE_ENV=production
+#     depends_on:
+#       - auth_service
+#       - todo_service
+#       - email.svc
 
-  auth_service:
-    container_name: auth_service
-    build:
-      context: .
-      dockerfile: ./apps/auth-service/Dockerfile
-    restart: no
-    networks:
-      - app_network
-    environment:
-      - FRONTEND_URL=http://localhost:4173
-      - REDIS_HOST=redis
-      - REDIS_PASSWORD=redis
-      - NODE_ENV=production
-      - AUTH_DATABASE_URL=postgres://auth_user:auth_pass@auth_db:5432/auth_db
-      - QUEUE_URL=amqp://rabbitmq:rabbitmq@rabbitmq:5672
-    depends_on:
-      - auth_db
-      - redis
-      - rabbitmq
-    volumes:
-      - ./keys:/app/keys:z
+#   auth_service:
+#     container_name: auth_service
+#     build:
+#       context: .
+#       dockerfile: ./apps/auth-service/Dockerfile
+#     restart: no
+#     networks:
+#       - app_network
+#     environment:
+#       - FRONTEND_URL=http://localhost:4173
+#       - REDIS_HOST=redis
+#       - REDIS_PASSWORD=redis
+#       - NODE_ENV=production
+#       - AUTH_DATABASE_URL=postgres://auth_user:auth_pass@auth_db:5432/auth_db
+#       - QUEUE_URL=amqp://rabbitmq:rabbitmq@rabbitmq:5672
+#     depends_on:
+#       - auth_db
+#       - redis
+#       - rabbitmq
+#     volumes:
+#       - ./keys:/app/keys:z
 
-  todo_service:
-    container_name: todo_service
-    build:
-      context: .
-      dockerfile: ./apps/todo-service/Dockerfile
-    networks:
-      - app_network
-    environment:
-      - TODO_DATABASE_URL=mongodb://todo_user:todo_pass@todo_db:27017/todo_db?authSource=admin
-      - NODE_ENV=production
-      - AUTH_SERVICE=http://auth_service:3002
-      - TODO_SERVICE=http://todo_service:3003
-      - FRONTEND_URL=http://localhost:4173/
-      - QUEUE_URL=amqp://rabbitmq:rabbitmq@rabbitmq:5672
-    depends_on:
-      - todo_db
-      - rabbitmq
+#   todo_service:
+#     container_name: todo_service
+#     build:
+#       context: .
+#       dockerfile: ./apps/todo-service/Dockerfile
+#     networks:
+#       - app_network
+#     environment:
+#       - TODO_DATABASE_URL=mongodb://todo_user:todo_pass@todo_db:27017/todo_db?authSource=admin
+#       - NODE_ENV=production
+#       - AUTH_SERVICE=http://auth_service:3002
+#       - TODO_SERVICE=http://todo_service:3003
+#       - FRONTEND_URL=http://localhost:4173/
+#       - QUEUE_URL=amqp://rabbitmq:rabbitmq@rabbitmq:5672
+#     depends_on:
+#       - todo_db
+#       - rabbitmq
 
-  web-app:
-    container_name: web-app
-    build:
-      context: .
-      dockerfile: ./apps/web-app/Dockerfile
-    ports:
-      - "4173:4173"
-    networks:
-      - app_network
+#   web-app:
+#     container_name: web-app
+#     build:
+#       context: .
+#       dockerfile: ./apps/web-app/Dockerfile
+#     ports:
+#       - "4173:4173"
+#     networks:
+#       - app_network
 
-  auth_db:
-    image: postgres:18
-    container_name: auth_db
-    environment:
-      POSTGRES_USER: auth_user
-      POSTGRES_PASSWORD: auth_pass
-      POSTGRES_DB: auth_db
-    ports:
-      - "5433:5432"
-    volumes:
-      - toolydooly_auth_db_data:/var/lib/postgresql
-    networks:
-      - app_network
+#   auth_db:
+#     image: postgres:18
+#     container_name: auth_db
+#     environment:
+#       POSTGRES_USER: auth_user
+#       POSTGRES_PASSWORD: auth_pass
+#       POSTGRES_DB: auth_db
+#     ports:
+#       - "5433:5432"
+#     volumes:
+#       - toolydooly_auth_db_data:/var/lib/postgresql
+#     networks:
+#       - app_network
 
-  email.svc:
-    container_name: email.svc
-    build: 
-      context: .
-      dockerfile: ./apps/email-service/Dockerfile
-    environment:
-      - QUEUE_URL=amqp://rabbitmq:rabbitmq@rabbitmq:5672
-      - FRONTEND_URL=http://localhost:4173
-    depends_on:
-      - rabbitmq
+#   email.svc:
+#     container_name: email.svc
+#     build: 
+#       context: .
+#       dockerfile: ./apps/email-service/Dockerfile
+#     environment:
+#       - QUEUE_URL=amqp://rabbitmq:rabbitmq@rabbitmq:5672
+#       - FRONTEND_URL=http://localhost:4173
+#     depends_on:
+#       - rabbitmq
 
-  todo_db:
-    image: mongo:latest
-    container_name: todo_db
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: todo_user
-      MONGO_INITDB_ROOT_PASSWORD: todo_pass
-      MONGO_INITDB_DATABASE: todo_db
-    ports:
-      - "27017:27017"
-    volumes:
-      - todo_db_data:/data/db
-    networks:
-      - app_network
+#   todo_db:
+#     image: mongo:latest
+#     container_name: todo_db
+#     environment:
+#       MONGO_INITDB_ROOT_USERNAME: todo_user
+#       MONGO_INITDB_ROOT_PASSWORD: todo_pass
+#       MONGO_INITDB_DATABASE: todo_db
+#     ports:
+#       - "27017:27017"
+#     volumes:
+#       - todo_db_data:/data/db
+#     networks:
+#       - app_network
 
-  redis:
-    image: redis:7
-    container_name: redis
-    volumes:
-      - redis_data:/data
-    ports:
-      - "6379:6379"
-    networks:
-      - app_network
-    command: >
-      redis-server
-      --requirepass redis
-      --appendonly yes
-      --protected-mode no
+#   redis:
+#     image: redis:7
+#     container_name: redis
+#     volumes:
+#       - redis_data:/data
+#     ports:
+#       - "6379:6379"
+#     networks:
+#       - app_network
+#     command: >
+#       redis-server
+#       --requirepass redis
+#       --appendonly yes
+#       --protected-mode no
 
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    environment:
-      RABBITMQ_DEFAULT_USER: rabbitmq
-      RABBITMQ_DEFAULT_PASS: rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    networks:
-      - app_network
+#   rabbitmq:
+#     image: rabbitmq:3-management
+#     container_name: rabbitmq
+#     environment:
+#       RABBITMQ_DEFAULT_USER: rabbitmq
+#       RABBITMQ_DEFAULT_PASS: rabbitmq
+#     ports:
+#       - "5672:5672"
+#       - "15672:15672"
+#     volumes:
+#       - rabbitmq_data:/var/lib/rabbitmq
+#     networks:
+#       - app_network
     
-  smtp:
-    image: maildev/maildev
-    ports:
-      - "1025:1025"
-      - "8025:8025"
-    networks:
-      - app_network
+#   smtp:
+#     image: maildev/maildev
+#     ports:
+#       - "1025:1025"
+#       - "8025:8025"
+#     networks:
+#       - app_network
 
-networks:
-  app_network:
-    driver: bridge
+services:
+  ministack:
+    image: ministackorg/ministack:latest
+    container_name: ministack
+    restart: unless-stopped
+    ports:
+      - "4566:4566"
+    volumes:
+      - ministack_data:/data
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4566/_ministack/health')" ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  stackport:
+    image: davireis/stackport:latest
+    container_name: stackport
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - AWS_ENDPOINT_URL=http://ministack:4566
+    depends_on:
+      - ministack
 
 volumes:
-  toolydooly_auth_db_data:
-  todo_db_data:
-  redis_data:
-  rabbitmq_data:
+  ministack_data:
+    driver: local
