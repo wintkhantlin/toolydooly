@@ -1,60 +1,119 @@
 terraform {
   required_providers {
     aws = {
-      version = ">= 2.7.0"
       source  = "hashicorp/aws"
+      version = "~> 6.57.1"
+    }
+
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.7"
     }
   }
 }
 
 provider "aws" {
-  region = "us-east-1"
+  region     = "us-east-1"
+  access_key = "test"
+  secret_key = "test"
+
+  skip_credentials_validation = true
+  skip_metadata_api_check     = true
+  skip_requesting_account_id  = true
 }
 
-resource "aws_db_instance" "todo_database" {
-  allocated_storage          = 5
-  auto_minor_version_upgrade = false
-  engine                     = "postgres"
-  engine_version             = "17.3"
-
-  username                   = "root"
-  manage_master_user_password = true
-
-  instance_class              = "db.t3.micro"
-  allow_major_version_upgrade = false
+resource "aws_vpc" "toolydooly" {
+  cidr_block = "10.0.0.0/16"
 }
 
-output "todo_database_secret_arn" {
-  value = aws_db_instance.todo_database.master_user_secret[0].secret_arn
+resource "aws_subnet" "todo" {
+  vpc_id                  = aws_vpc.toolydooly.id
+  cidr_block              = "10.0.1.0/24"
 }
 
-resource "aws_elasticache_cluster" "todo_cache" {
-  cluster_id      = "todo-cache"
-  engine          = "redis"
-  engine_version  = "3.2.10"
-  node_type       = "cache.t3.micro"
-  num_cache_nodes = 1
-  port            = 6379
+resource "aws_db_subnet_group" "todo_subnet_group" {
+  name = "todo-subnet-group"
+  subnet_ids = [
+    aws_subnet.todo.id
+  ]
 }
 
-resource "aws_sqs_queue" "todo_queue" {
-  count                       = 1
+# resource "aws_elasticache_subnet_group" "todo_cache" {
+  
+# }
+
+resource "random_password" "db_password" {
+  length = 24
+}
+
+resource "aws_db_instance" "db" {
+  allocated_storage = 5
+  engine            = "postgres"
+  engine_version    = "17.3"
+  instance_class    = "db.t3.micro"
+
+  db_name  = "todo_db"
+  username = "postgres"
+  password = random_password.db_password.result
+  
+  port     = 5433
+
+  db_subnet_group_name = aws_db_subnet_group.todo_subnet_group.name
+
+  publicly_accessible = true
+  multi_az = false
+
+  backup_retention_period   = 7
+  deletion_protection       = false
+
+  skip_final_snapshot = true
+}
+
+resource "aws_secretsmanager_secret" "db" {
+  name = "todo/db/master"
+}
+
+resource "aws_secretsmanager_secret_version" "db" {
+  secret_id = aws_secretsmanager_secret.db.id
+
+  secret_string = jsonencode({
+    host     = aws_db_instance.db.address
+    port     = aws_db_instance.db.port
+    database = aws_db_instance.db.db_name
+    username = aws_db_instance.db.username
+    password = random_password.db_password.result
+  })
+}
+
+resource "aws_sqs_queue" "queue" {
+  name                        = "todo-queue.fifo"
   fifo_queue                  = true
   content_based_deduplication = true
 }
 
-output "db_instance_endpoint" {
-  value = aws_db_instance.todo_database.endpoint
+resource "aws_secretsmanager_secret" "todo_sqs" {
+  name = "todo/sqs/master"
 }
 
-output "cache_endpoint" {
-  value = aws_elasticache_cluster.todo_cache.cache_nodes[0].address
+resource "aws_secretsmanager_secret_version" "todo_sqs" {
+  secret_id = aws_secretsmanager_secret.todo_sqs.id
+
+  secret_string = jsonencode({
+    queue_url = aws_sqs_queue.queue.url
+    queue_arn = aws_sqs_queue.queue.arn
+    region    = "us-east-1"
+  })
 }
 
-output "sqs_queue_url" {
-  value = aws_sqs_queue.todo_queue[0].id
+
+output "db_secret_arn" {
+  value = aws_secretsmanager_secret.db.arn
 }
 
-output "sqs_queue_arn" {
-  value = aws_sqs_queue.todo_queue[0].arn
+output "db_endpoint" {
+  value = aws_db_instance.db.endpoint
+}
+
+output "queue_url" {
+  value = aws_sqs_queue.queue.url
 }

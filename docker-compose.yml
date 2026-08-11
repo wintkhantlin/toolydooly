@@ -152,13 +152,18 @@ services:
     restart: unless-stopped
     ports:
       - "4566:4566"
+    privileged: true
     volumes:
       - ministack_data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
     healthcheck:
       test: [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4566/_ministack/health')" ]
       interval: 5s
       timeout: 3s
       retries: 5
+    networks:
+      - app-network
+
 
   stackport:
     image: davireis/stackport:latest
@@ -168,8 +173,39 @@ services:
       - "8080:8080"
     environment:
       - AWS_ENDPOINT_URL=http://ministack:4566
+      - AWS_SECRET_ACCESS_KEY=ministack
+      - AWS_ACCESS_KEY_ID=ministack
+    networks:
+      - app-network
     depends_on:
       - ministack
+
+  todo-migrate:
+    build:
+      context: ./apps/todo-service
+      dockerfile: ./Dockerfile
+      args:
+        CMD: migrate
+    networks:
+      - app-network
+    depends_on:
+      - ministack
+  
+  todo-service:
+    build:
+      context: ./apps/todo-service
+      dockerfile: ./Dockerfile
+      args:
+        CMD: server
+    ports:
+      - "8001:8001"
+    networks: 
+      - app-network
+    depends_on:
+      - ministack
+
+networks:
+  app-network:
 
 volumes:
   ministack_data:
