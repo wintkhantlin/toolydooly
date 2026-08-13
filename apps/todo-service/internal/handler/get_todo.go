@@ -1,34 +1,48 @@
 package handler
 
 import (
-	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/congito"
+	"github.com/wintkhantlin/toolydooly/todo-service/internal/db"
 )
 
 func (h *Handler) GetTodo(w http.ResponseWriter, r *http.Request) {
-	sub, ok := congito.UserSubjectFromContext(r.Context())
-
+	userID, ok := congito.UserSubjectFromContext(r.Context())
 	if !ok {
-		http.Error(w, "Unauthorized", 403)
-	}
-
-	todos, err := h.Queries.ListTodosByUserID(context.Background(), pgtype.UUID{
-		Bytes: uuid.MustParse(sub),
-		Valid: true,
-	})
-
-	if err != nil {
-		http.Error(w, "Something went wrong", 500)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	todos, err := h.Queries.ListTodosByUserID(
+		r.Context(),
+		pgtype.UUID{
+			Bytes: userID,
+			Valid: true,
+		},
+	)
+	if err != nil {
+		log.Printf("list todos for user %s: %v", userID, err)
 
-	json.NewEncoder(w).Encode(todos)
+		http.Error(
+			w,
+			"Internal server error",
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	if todos == nil {
+		todos = make([]db.Todo, 0)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+
+	if err := json.NewEncoder(w).Encode(todos); err != nil {
+		log.Printf("encode todos for user %s: %v", userID, err)
+	}
 }

@@ -26,10 +26,12 @@ func RegisterApp(
 		return m.AuthMiddleware(verifier, next)
 	})
 
-	r.Post("/", handler.CreateTodo)
-	r.Get("/", handler.GetTodo)
-	r.Put("/{id}", handler.UpdateTodo)
-	r.Delete("/", handler.DeleteTodo)
+	r.Route("/todos", func(r chi.Router) {
+		r.Post("/", handler.CreateTodo)
+		r.Get("/", handler.GetTodo)
+		r.Put("/{id}", handler.UpdateTodo)
+		r.Delete("/", handler.DeleteTodo)
+	})
 }
 
 func StartServer(lc fx.Lifecycle, server *http.Server) {

@@ -17,12 +17,14 @@ func NewCognitoVerifier(
 	userPoolID string,
 	clientID string,
 ) (*CognitoVerifier, error) {
-	issuer := fmt.Sprintf(
+	jwksRoot := fmt.Sprintf(
 		"http://ministack:4566/%s",
 		userPoolID,
 	)
 
-	jwksURL := issuer + "/.well-known/jwks.json"
+	jwksURL := jwksRoot + "/.well-known/jwks.json"
+
+	issuer := "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_hmhgwaPgZ"
 
 	resp, err := http.Get(jwksURL)
 	if err != nil {
@@ -34,6 +36,7 @@ func NewCognitoVerifier(
 	fmt.Println("JWKS STATUS:", resp.Status)
 
 	jwks, err := keyfunc.Get(jwksURL, keyfunc.Options{})
+
 	if err != nil {
 		return nil, fmt.Errorf("load cognito jwks: %w", err)
 	}

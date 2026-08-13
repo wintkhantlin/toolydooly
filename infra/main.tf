@@ -157,15 +157,61 @@ resource "aws_apigatewayv2_authorizer" "cognito" {
       aws_cognito_user_pool_client.api.id
     ]
 
-    issuer = "http://ministack:8000/${aws_cognito_user_pool.auth.id}"
+    issuer = "https://cognito-idp.us-east-1.amazonaws.com/${aws_cognito_user_pool.auth.id}"
   }
 }
 
 resource "aws_apigatewayv2_integration" "todo-service" {
   api_id = aws_apigatewayv2_api.app.id
 
-  integration_type = "PROXY"
+  integration_type = "HTTP_PROXY"
   integration_uri = "http://todo-service:8001"
+}
+
+resource "aws_apigatewayv2_route" "get_todos" {
+  api_id    = aws_apigatewayv2_api.app.id
+  route_key = "GET /todos"
+
+  target = "integrations/${aws_apigatewayv2_integration.todo-service.id}"
+
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+}
+
+resource "aws_apigatewayv2_route" "create_todo" {
+  api_id    = aws_apigatewayv2_api.app.id
+  route_key = "POST /todos"
+
+  target = "integrations/${aws_apigatewayv2_integration.todo-service.id}"
+
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+}
+
+resource "aws_apigatewayv2_route" "update_todo" {
+  api_id    = aws_apigatewayv2_api.app.id
+  route_key = "PUT /todos/{id}"
+
+  target = "integrations/${aws_apigatewayv2_integration.todo-service.id}"
+
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+}
+
+resource "aws_apigatewayv2_route" "delete_todo" {
+  api_id    = aws_apigatewayv2_api.app.id
+  route_key = "DELETE /todos/{id}"
+
+  target = "integrations/${aws_apigatewayv2_integration.todo-service.id}"
+
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
+}
+
+resource "aws_apigatewayv2_stage" "default" {
+  api_id      = aws_apigatewayv2_api.app.id
+  name        = "$default"
+  auto_deploy = true
 }
 
 output "db_secret_arn" {

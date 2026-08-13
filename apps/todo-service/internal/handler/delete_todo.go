@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -36,14 +37,13 @@ func (h *Handler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
 		Valid: true,
 	}
 
-	// Check existence + ownership.
 	todo, err := h.Queries.GetTodoByID(r.Context(), todoID)
 	if err != nil {
 		http.Error(w, "todo not found", http.StatusNotFound)
 		return
 	}
 
-	if todo.UserID.String() != sub {
+	if todo.UserID.String() != sub.String() {
 		http.Error(w, "todo not found", http.StatusNotFound)
 		return
 	}
@@ -70,7 +70,7 @@ func (h *Handler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
 		&sqs.SendMessageInput{
 			QueueUrl:       &h.AppCfg.TodoQueueURL,
 			MessageBody:    &message,
-			MessageGroupId: &sub,
+			MessageGroupId: aws.String(sub.String()),
 		},
 	)
 

@@ -8,7 +8,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/congito"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/queue"
@@ -41,15 +40,9 @@ func (h *Handler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userUUID, err := uuid.Parse(sub)
-
-	if err != nil {
-		http.Error(w, "invalid user", 403)
-	}
-
 	todo := db.Todo{
 		UserID: pgtype.UUID{
-			Bytes: userUUID,
+			Bytes: sub,
 			Valid: true,
 		},
 		Text:     req.Text,
@@ -75,7 +68,7 @@ func (h *Handler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 		&sqs.SendMessageInput{
 			QueueUrl:       &h.AppCfg.TodoQueueURL,
 			MessageBody:    &message,
-			MessageGroupId: aws.String(sub),
+			MessageGroupId: aws.String(sub.String()),
 		},
 	)
 

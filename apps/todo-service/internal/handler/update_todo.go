@@ -49,13 +49,8 @@ func (h *Handler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userUUID, err := uuid.Parse(sub)
-	if err != nil {
-		http.Error(w, "invalid user", http.StatusForbidden)
-		return
-	}
-
 	todoUUID, err := uuid.Parse(todoID)
+
 	if err != nil {
 		http.Error(w, "invalid todo id", http.StatusBadRequest)
 		return
@@ -67,7 +62,7 @@ func (h *Handler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
 			Valid: true,
 		},
 		UserID: pgtype.UUID{
-			Bytes: userUUID,
+			Bytes: sub,
 			Valid: true,
 		},
 		Text:     req.Text,
@@ -93,7 +88,7 @@ func (h *Handler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
 		&sqs.SendMessageInput{
 			QueueUrl:       &h.AppCfg.TodoQueueURL,
 			MessageBody:    &message,
-			MessageGroupId: aws.String(sub),
+			MessageGroupId: aws.String(sub.String()),
 		},
 	)
 
