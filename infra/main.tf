@@ -27,8 +27,8 @@ resource "aws_vpc" "toolydooly" {
 }
 
 resource "aws_subnet" "todo" {
-  vpc_id                  = aws_vpc.toolydooly.id
-  cidr_block              = "10.0.1.0/24"
+  vpc_id     = aws_vpc.toolydooly.id
+  cidr_block = "10.0.1.0/24"
 }
 
 resource "aws_db_subnet_group" "todo_subnet_group" {
@@ -37,10 +37,6 @@ resource "aws_db_subnet_group" "todo_subnet_group" {
     aws_subnet.todo.id
   ]
 }
-
-# resource "aws_elasticache_subnet_group" "todo_cache" {
-  
-# }
 
 resource "random_password" "db_password" {
   length = 24
@@ -55,16 +51,16 @@ resource "aws_db_instance" "db" {
   db_name  = "todo_db"
   username = "postgres"
   password = random_password.db_password.result
-  
-  port     = 5433
+
+  port = 5432
 
   db_subnet_group_name = aws_db_subnet_group.todo_subnet_group.name
 
   publicly_accessible = true
-  multi_az = false
+  multi_az            = false
 
-  backup_retention_period   = 7
-  deletion_protection       = false
+  backup_retention_period = 7
+  deletion_protection     = false
 
   skip_final_snapshot = true
 }
@@ -78,7 +74,7 @@ resource "aws_secretsmanager_secret_version" "db" {
 
   secret_string = jsonencode({
     host     = aws_db_instance.db.address
-    port     = aws_db_instance.db.port
+    port     = 5432 # was: aws_db_instance.db.port
     database = aws_db_instance.db.db_name
     username = aws_db_instance.db.username
     password = random_password.db_password.result
@@ -87,6 +83,7 @@ resource "aws_secretsmanager_secret_version" "db" {
 
 resource "aws_sqs_queue" "queue" {
   name                        = "todo-queue.fifo"
+
   fifo_queue                  = true
   content_based_deduplication = true
 }
@@ -98,8 +95,16 @@ resource "aws_secretsmanager_secret" "todo_sqs" {
 resource "aws_secretsmanager_secret_version" "todo_sqs" {
   secret_id = aws_secretsmanager_secret.todo_sqs.id
 
+  depends_on = [
+    aws_sqs_queue.queue
+  ]
+
   secret_string = jsonencode({
-    queue_url = aws_sqs_queue.queue.url
+    queue_url = replace(
+      aws_sqs_queue.queue.url,
+      "localhost",
+      "ministack"
+    )
     queue_arn = aws_sqs_queue.queue.arn
     region    = "us-east-1"
   })
