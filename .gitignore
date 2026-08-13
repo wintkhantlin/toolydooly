@@ -40,3 +40,13 @@ yarn-error.log*
 
 keys
 *.http
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+# Terraform
+infra/.terraform/
+*.tfstate
+*.tfstate.backup
+# bun lock
+bun.lock
