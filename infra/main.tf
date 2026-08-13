@@ -82,7 +82,7 @@ resource "aws_secretsmanager_secret_version" "db" {
 }
 
 resource "aws_sqs_queue" "queue" {
-  name                        = "todo-queue.fifo"
+  name = "todo-queue.fifo"
 
   fifo_queue                  = true
   content_based_deduplication = true
@@ -110,6 +110,63 @@ resource "aws_secretsmanager_secret_version" "todo_sqs" {
   })
 }
 
+## Congito
+
+resource "aws_cognito_user_pool" "auth" {
+  name = "authentication"
+
+  username_attributes = ["email"]
+
+  password_policy {
+    minimum_length    = 8
+    require_lowercase = true
+    require_numbers   = true
+    require_uppercase = true
+    require_symbols   = true
+  }
+}
+
+resource "aws_cognito_user_pool_client" "api" {
+  name         = "api"
+  user_pool_id = aws_cognito_user_pool.auth.id
+
+  generate_secret = false
+}
+
+## API Gateway
+
+resource "aws_apigatewayv2_api" "app" {
+  name          = "app"
+  protocol_type = "HTTP"
+
+  cors_configuration {
+    allow_origins = ["*"]
+    allow_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allow_headers = ["Authorization", "Content-Type"]
+  }
+}
+
+resource "aws_apigatewayv2_authorizer" "cognito" {
+  name = "api-gateway"
+  api_id           = aws_apigatewayv2_api.app.id
+  authorizer_type  = "JWT"
+  identity_sources = ["$request.header.Authorization"]
+
+  jwt_configuration {
+    audience = [
+      aws_cognito_user_pool_client.api.id
+    ]
+
+    issuer = "http://ministack:8000/${aws_cognito_user_pool.auth.id}"
+  }
+}
+
+resource "aws_apigatewayv2_integration" "todo-service" {
+  api_id = aws_apigatewayv2_api.app.id
+
+  integration_type = "PROXY"
+  integration_uri = "http://todo-service:8001"
+}
 
 output "db_secret_arn" {
   value = aws_secretsmanager_secret.db.arn

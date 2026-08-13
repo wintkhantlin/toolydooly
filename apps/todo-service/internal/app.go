@@ -8,7 +8,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws"
+	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/congito"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/handler"
+	m "github.com/wintkhantlin/toolydooly/todo-service/internal/middleware"
 	"go.uber.org/fx"
 )
 
@@ -17,8 +19,12 @@ func RegisterApp(
 	queue *sqs.Client,
 	appCfg *aws.AppConfig,
 	handler *handler.Handler,
+	verifier *congito.CognitoVerifier,
 ) {
 	r.Use(middleware.Logger)
+	r.Use(func(next http.Handler) http.Handler {
+		return m.AuthMiddleware(verifier, next)
+	})
 
 	r.Post("/", handler.CreateTodo)
 	r.Get("/", handler.GetTodo)

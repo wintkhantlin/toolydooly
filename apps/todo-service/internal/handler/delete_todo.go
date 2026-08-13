@@ -3,12 +3,12 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/congito"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/queue"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/db"
 )
@@ -18,11 +18,10 @@ type DeleteTodoRequest struct {
 }
 
 func (h *Handler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
-	userID := strings.TrimSpace(r.Header.Get("X-User-Subject"))
+	sub, ok := congito.UserSubjectFromContext(r.Context())
 
-	if userID == "" {
-		http.Error(w, "missing user subject", http.StatusUnauthorized)
-		return
+	if !ok {
+		http.Error(w, "Unauthorized", 403)
 	}
 
 	var req DeleteTodoRequest
@@ -44,7 +43,7 @@ func (h *Handler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if todo.UserID.String() != userID {
+	if todo.UserID.String() != sub {
 		http.Error(w, "todo not found", http.StatusNotFound)
 		return
 	}
@@ -71,7 +70,7 @@ func (h *Handler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
 		&sqs.SendMessageInput{
 			QueueUrl:       &h.AppCfg.TodoQueueURL,
 			MessageBody:    &message,
-			MessageGroupId: &userID,
+			MessageGroupId: &sub,
 		},
 	)
 

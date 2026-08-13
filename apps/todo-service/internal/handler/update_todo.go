@@ -11,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/congito"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/queue"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/db"
 )
@@ -21,14 +22,12 @@ type UpdateTodoRequest struct {
 }
 
 func (h *Handler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
-	userID := strings.TrimSpace(r.Header.Get("X-User-Subject"))
+	sub, ok := congito.UserSubjectFromContext(r.Context())
 
-	if userID == "" {
-		http.Error(w, "missing user subject", http.StatusUnauthorized)
-		return
+	if !ok {
+		http.Error(w, "Unauthorized", 403)
 	}
 
-	// Go 1.22+:
 	todoID := r.PathValue("id")
 
 	if todoID == "" {
@@ -50,7 +49,7 @@ func (h *Handler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userUUID, err := uuid.Parse(userID)
+	userUUID, err := uuid.Parse(sub)
 	if err != nil {
 		http.Error(w, "invalid user", http.StatusForbidden)
 		return
@@ -94,7 +93,7 @@ func (h *Handler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
 		&sqs.SendMessageInput{
 			QueueUrl:       &h.AppCfg.TodoQueueURL,
 			MessageBody:    &message,
-			MessageGroupId: aws.String(userID),
+			MessageGroupId: aws.String(sub),
 		},
 	)
 

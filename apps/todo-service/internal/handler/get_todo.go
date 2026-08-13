@@ -4,22 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/congito"
 )
 
 func (h *Handler) GetTodo(w http.ResponseWriter, r *http.Request) {
-	userID := strings.TrimSpace(r.Header.Get("X-User-Subject"))
+	sub, ok := congito.UserSubjectFromContext(r.Context())
 
-	if userID == "" {
-		http.Error(w, "missing user subject", http.StatusUnauthorized)
-		return
+	if !ok {
+		http.Error(w, "Unauthorized", 403)
 	}
 
 	todos, err := h.Queries.ListTodosByUserID(context.Background(), pgtype.UUID{
-		Bytes: uuid.MustParse(userID),
+		Bytes: uuid.MustParse(sub),
 		Valid: true,
 	})
 

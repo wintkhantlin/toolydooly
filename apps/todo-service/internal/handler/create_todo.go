@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/congito"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/queue"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/db"
 )
@@ -20,11 +21,10 @@ type CreateTodoRequest struct {
 }
 
 func (h *Handler) CreateTodo(w http.ResponseWriter, r *http.Request) {
-	userID := strings.TrimSpace(r.Header.Get("X-User-Subject"))
+	sub, ok := congito.UserSubjectFromContext(r.Context())
 
-	if userID == "" {
-		http.Error(w, "missing user subject", http.StatusUnauthorized)
-		return
+	if !ok {
+		http.Error(w, "Unauthorized", 403)
 	}
 
 	var req CreateTodoRequest
@@ -41,7 +41,7 @@ func (h *Handler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userUUID, err := uuid.Parse(userID)
+	userUUID, err := uuid.Parse(sub)
 
 	if err != nil {
 		http.Error(w, "invalid user", 403)
@@ -75,7 +75,7 @@ func (h *Handler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 		&sqs.SendMessageInput{
 			QueueUrl:       &h.AppCfg.TodoQueueURL,
 			MessageBody:    &message,
-			MessageGroupId: aws.String(userID),
+			MessageGroupId: aws.String(sub),
 		},
 	)
 
