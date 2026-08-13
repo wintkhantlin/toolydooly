@@ -63,17 +63,14 @@ func StartTodoConsumer(
 					}
 
 					for _, message := range messages.Messages {
-						err := processMessage(
+						if err := processMessage(
 							consumerCtx,
 							client,
 							cfg.TodoQueueURL,
 							queries,
 							message,
-						)
-
-						if err != nil {
+						); err != nil {
 							log.Println("process message error:", err)
-							continue
 						}
 					}
 				}
@@ -101,6 +98,22 @@ func processMessage(
 	queries *db.Queries,
 	message types.Message,
 ) error {
+	// Always delete the message when this function finishes,
+	// regardless of whether processing succeeds or fails.
+	defer func() {
+		_, err := client.DeleteMessage(
+			context.Background(),
+			&sqs.DeleteMessageInput{
+				QueueUrl:      &queueURL,
+				ReceiptHandle: message.ReceiptHandle,
+			},
+		)
+
+		if err != nil {
+			log.Println("delete sqs message error:", err)
+		}
+	}()
+
 	var event queue.TodoEvent
 
 	if err := json.Unmarshal(
@@ -128,20 +141,6 @@ func processMessage(
 
 	default:
 		return fmt.Errorf("unknown todo action: %v", event.Action)
-	}
-
-	// Only remove the message after the database operation
-	// has completed successfully.
-	_, err := client.DeleteMessage(
-		ctx,
-		&sqs.DeleteMessageInput{
-			QueueUrl:      &queueURL,
-			ReceiptHandle: message.ReceiptHandle,
-		},
-	)
-
-	if err != nil {
-		return fmt.Errorf("delete sqs message: %w", err)
 	}
 
 	return nil
