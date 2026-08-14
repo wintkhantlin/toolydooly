@@ -28,7 +28,6 @@ ORDER BY created_at DESC;
 
 
 -- name: UpdateTodo :one
--- name: UpdateTodo :one
 UPDATE todo
 SET
     text = $2,

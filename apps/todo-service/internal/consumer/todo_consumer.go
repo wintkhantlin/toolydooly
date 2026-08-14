@@ -190,6 +190,7 @@ func handleUpdate(
 			ID:       event.Payload.ID,
 			Text:     event.Payload.Text,
 			Priority: event.Payload.Priority,
+			UserID:   event.Payload.UserID,
 		},
 	)
 

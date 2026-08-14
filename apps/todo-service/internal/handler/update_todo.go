@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
@@ -25,10 +26,11 @@ func (h *Handler) UpdateTodo(w http.ResponseWriter, r *http.Request) {
 	sub, ok := congito.UserSubjectFromContext(r.Context())
 
 	if !ok {
-		http.Error(w, "Unauthorized", 403)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
 	}
 
-	todoID := r.PathValue("id")
+	todoID := chi.URLParam(r, "id")
 
 	if todoID == "" {
 		http.Error(w, "missing todo id", http.StatusBadRequest)

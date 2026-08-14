@@ -7,6 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/congito"
@@ -14,26 +15,28 @@ import (
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/db"
 )
 
-type DeleteTodoRequest struct {
-	TodoID uuid.UUID `json:"id" validate:"required,min=1,max=16"`
-}
-
 func (h *Handler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
 	sub, ok := congito.UserSubjectFromContext(r.Context())
 
 	if !ok {
-		http.Error(w, "Unauthorized", 403)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
 	}
 
-	var req DeleteTodoRequest
+	todoIDStr := chi.URLParam(r, "id")
+	if todoIDStr == "" {
+		http.Error(w, "missing todo id", http.StatusBadRequest)
+		return
+	}
 
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+	todoUUID, err := uuid.Parse(todoIDStr)
+	if err != nil {
+		http.Error(w, "invalid todo id", http.StatusBadRequest)
 		return
 	}
 
 	todoID := pgtype.UUID{
-		Bytes: req.TodoID,
+		Bytes: todoUUID,
 		Valid: true,
 	}
 

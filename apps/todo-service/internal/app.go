@@ -4,7 +4,6 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws"
@@ -16,7 +15,6 @@ import (
 
 func RegisterApp(
 	r *chi.Mux,
-	queue *sqs.Client,
 	appCfg *aws.AppConfig,
 	handler *handler.Handler,
 	verifier *congito.CognitoVerifier,
@@ -30,7 +28,7 @@ func RegisterApp(
 		r.Post("/", handler.CreateTodo)
 		r.Get("/", handler.GetTodo)
 		r.Put("/{id}", handler.UpdateTodo)
-		r.Delete("/", handler.DeleteTodo)
+		r.Delete("/{id}", handler.DeleteTodo)
 	})
 }
 

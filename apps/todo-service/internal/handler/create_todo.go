@@ -23,7 +23,8 @@ func (h *Handler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 	sub, ok := congito.UserSubjectFromContext(r.Context())
 
 	if !ok {
-		http.Error(w, "Unauthorized", 403)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
 	}
 
 	var req CreateTodoRequest
