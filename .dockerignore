@@ -1,2 +1,28 @@
+# common
+.git
+.gitignore
+.DS_Store
+
+# Node and build artifacts
 node_modules
 out
+dist
+build
+
+# Editor/project files
+.vscode
+.idea
+
+# Environment files
+.env
+.env.local
+
+# Logs
+*.log
+
+# Docker
+Dockerfile*
+
+# OS
+*.swp
+Thumbs.db
