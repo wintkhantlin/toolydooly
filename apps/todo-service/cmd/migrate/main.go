@@ -11,7 +11,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws"
-	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/secrets"
+	"github.com/wintkhantlin/toolydooly/shared/aws/secrets"
 )
 
 func main() {

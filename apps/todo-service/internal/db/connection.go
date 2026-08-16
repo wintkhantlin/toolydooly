@@ -7,7 +7,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/secrets"
+	"github.com/wintkhantlin/toolydooly/shared/aws/secrets"
 	"go.uber.org/fx"
 )
 

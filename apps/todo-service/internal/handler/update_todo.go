@@ -12,8 +12,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/congito"
-	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/queue"
+	"github.com/wintkhantlin/toolydooly/shared/aws/congito"
+	"github.com/wintkhantlin/toolydooly/shared/aws/queue"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/db"
 )
 

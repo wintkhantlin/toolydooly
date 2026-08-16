@@ -15,7 +15,7 @@ import (
 	"go.uber.org/fx"
 
 	c "github.com/wintkhantlin/toolydooly/todo-service/internal/aws"
-	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/queue"
+	"github.com/wintkhantlin/toolydooly/shared/aws/queue"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/db"
 )
 

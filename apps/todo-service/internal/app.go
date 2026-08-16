@@ -7,7 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws"
-	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/congito"
+	"github.com/wintkhantlin/toolydooly/shared/aws/congito"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/handler"
 	m "github.com/wintkhantlin/toolydooly/todo-service/internal/middleware"
 	"go.uber.org/fx"

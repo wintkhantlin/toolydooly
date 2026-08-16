@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
-	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/secrets"
+	"github.com/wintkhantlin/toolydooly/shared/aws/secrets"
 )
 
 func getEnv(key, defaultValue string) string {

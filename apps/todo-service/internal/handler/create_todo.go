@@ -9,8 +9,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/congito"
-	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/queue"
+	"github.com/wintkhantlin/toolydooly/shared/aws/congito"
+	"github.com/wintkhantlin/toolydooly/shared/aws/queue"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/db"
 )
 
