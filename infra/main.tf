@@ -88,6 +88,14 @@ resource "aws_sqs_queue" "queue" {
   content_based_deduplication = true
 }
 
+# Realtime queue for broadcasting events to websocket service
+resource "aws_sqs_queue" "realtime_queue" {
+  name = "realtime-queue.fifo"
+
+  fifo_queue                  = true
+  content_based_deduplication = true
+}
+
 resource "aws_secretsmanager_secret" "todo_sqs" {
   name = "todo/sqs/master"
 }
@@ -106,6 +114,28 @@ resource "aws_secretsmanager_secret_version" "todo_sqs" {
       "ministack"
     )
     queue_arn = aws_sqs_queue.queue.arn
+    region    = "us-east-1"
+  })
+}
+
+resource "aws_secretsmanager_secret" "realtime_sqs" {
+  name = "realtime/sqs/master"
+}
+
+resource "aws_secretsmanager_secret_version" "realtime_sqs" {
+  secret_id = aws_secretsmanager_secret.realtime_sqs.id
+
+  depends_on = [
+    aws_sqs_queue.realtime_queue
+  ]
+
+  secret_string = jsonencode({
+    queue_url = replace(
+      aws_sqs_queue.realtime_queue.url,
+      "localhost",
+      "ministack"
+    )
+    queue_arn = aws_sqs_queue.realtime_queue.arn
     region    = "us-east-1"
   })
 }

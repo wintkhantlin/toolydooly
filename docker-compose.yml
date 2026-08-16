@@ -206,6 +206,23 @@ services:
     depends_on:
       - ministack
 
+  realtime-service:
+    build:
+      context: .
+      dockerfile: ./apps/realtime-service/Dockerfile
+      args:
+        CMD: server
+    ports:
+      - "8002:8002"
+    networks:
+      - app-network
+    depends_on:
+      - ministack
+    environment:
+      - AWS_ENDPOINT_URL=http://ministack:4566
+      - AWS_SECRET_ACCESS_KEY=ministack
+      - AWS_ACCESS_KEY_ID=ministack
+
 networks:
   app-network:
 

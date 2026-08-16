@@ -10,6 +10,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"go.uber.org/fx"
 
 	c "github.com/wintkhantlin/toolydooly/todo-service/internal/aws"
@@ -151,11 +153,21 @@ func handleCreate(
 	queries *db.Queries,
 	event queue.TodoEvent,
 ) error {
+	// Convert payload.UserID (string) to pgtype.UUID
+	var userID pgtype.UUID
+	if event.Payload.UserID != "" {
+		uid, err := uuid.Parse(event.Payload.UserID)
+		if err != nil {
+			return fmt.Errorf("invalid user id in event: %w", err)
+		}
+		userID = pgtype.UUID{Bytes: uid, Valid: true}
+	}
+
 	_, err := queries.CreateTodo(
 		ctx,
 		db.CreateTodoParams{
 			Text:     event.Payload.Text,
-			UserID:   event.Payload.UserID,
+			UserID:   userID,
 			Priority: event.Payload.Priority,
 		},
 	)
@@ -172,25 +184,38 @@ func handleUpdate(
 	queries *db.Queries,
 	event queue.TodoEvent,
 ) error {
+	// Convert ID and userID from strings to pgtype.UUID
+	id, err := uuid.Parse(event.Payload.ID)
+	if err != nil {
+		return fmt.Errorf("invalid todo id in event: %w", err)
+	}
+	pgID := pgtype.UUID{Bytes: id, Valid: true}
+
+	userID, err := uuid.Parse(event.Payload.UserID)
+	if err != nil {
+		return fmt.Errorf("invalid user id in event: %w", err)
+	}
+	pgUserID := pgtype.UUID{Bytes: userID, Valid: true}
+
 	todo, err := queries.GetTodoByID(
 		ctx,
-		event.Payload.ID,
+		pgID,
 	)
 	if err != nil {
 		return fmt.Errorf("get todo for update: %w", err)
 	}
 
-	if todo.UserID != event.Payload.UserID {
+	if todo.UserID != pgUserID {
 		return fmt.Errorf("todo does not belong to user")
 	}
 
 	_, err = queries.UpdateTodo(
 		ctx,
 		db.UpdateTodoParams{
-			ID:       event.Payload.ID,
+			ID:       pgID,
 			Text:     event.Payload.Text,
 			Priority: event.Payload.Priority,
-			UserID:   event.Payload.UserID,
+			UserID:   pgUserID,
 		},
 	)
 
@@ -206,21 +231,33 @@ func handleDelete(
 	queries *db.Queries,
 	event queue.TodoEvent,
 ) error {
+	id, err := uuid.Parse(event.Payload.ID)
+	if err != nil {
+		return fmt.Errorf("invalid todo id in event: %w", err)
+	}
+	pgID := pgtype.UUID{Bytes: id, Valid: true}
+
+	userID, err := uuid.Parse(event.Payload.UserID)
+	if err != nil {
+		return fmt.Errorf("invalid user id in event: %w", err)
+	}
+	pgUserID := pgtype.UUID{Bytes: userID, Valid: true}
+
 	todo, err := queries.GetTodoByID(
 		ctx,
-		event.Payload.ID,
+		pgID,
 	)
 	if err != nil {
 		return fmt.Errorf("get todo for delete: %w", err)
 	}
 
-	if todo.UserID != event.Payload.UserID {
+	if todo.UserID != pgUserID {
 		return fmt.Errorf("todo does not belong to user")
 	}
 
 	err = queries.SoftDeleteTodo(
 		ctx,
-		event.Payload.ID,
+		pgID,
 	)
 
 	if err != nil {

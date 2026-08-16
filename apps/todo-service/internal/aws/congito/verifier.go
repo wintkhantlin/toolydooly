@@ -1,62 +1,17 @@
 package congito
 
 import (
-	"fmt"
-	"net/http"
-
-	"github.com/MicahParks/keyfunc/v2"
+	sharedcongito "github.com/wintkhantlin/toolydooly/shared/aws/congito"
 )
 
-type CognitoVerifier struct {
-	jwks     *keyfunc.JWKS
-	issuer   string
-	clientID string
-}
+type CognitoVerifier = sharedcongito.CognitoVerifier
 
-func NewCognitoVerifier(
-	userPoolID string,
-	clientID string,
-) (*CognitoVerifier, error) {
-	jwksRoot := fmt.Sprintf(
-		"http://ministack:4566/%s",
-		userPoolID,
-	)
+type Claims = sharedcongito.Claims
 
-	jwksURL := jwksRoot + "/.well-known/jwks.json"
-
-	issuer := "https://cognito-idp.us-east-1.amazonaws.com/us-east-1_hmhgwaPgZ"
-
-	resp, err := http.Get(jwksURL)
-	if err != nil {
-		return nil, fmt.Errorf("test jwks request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	fmt.Println("JWKS URL:", jwksURL)
-	fmt.Println("JWKS STATUS:", resp.Status)
-
-	jwks, err := keyfunc.Get(jwksURL, keyfunc.Options{})
-
-	if err != nil {
-		return nil, fmt.Errorf("load cognito jwks: %w", err)
-	}
-
-	return &CognitoVerifier{
-		jwks:     jwks,
-		issuer:   issuer,
-		clientID: clientID,
-	}, nil
+func NewCognitoVerifier(userPoolID string, clientID string) (*CognitoVerifier, error) {
+	return sharedcongito.NewCognitoVerifier(userPoolID, clientID)
 }
 
 func NewCongitoVerifierInFx() *CognitoVerifier {
-	verifier, err := NewCognitoVerifier(
-		"us-east-1_hmhgwaPgZ",
-		"99WU3GD9tDeqSBzywMxfCAwsbA",
-	)
-
-	if err != nil {
-		panic(err)
-	}
-
-	return verifier
+	return sharedcongito.NewCongitoVerifierInFx()
 }

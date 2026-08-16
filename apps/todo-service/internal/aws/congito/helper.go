@@ -4,17 +4,13 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	sharedcongito "github.com/wintkhantlin/toolydooly/shared/aws/congito"
 )
 
-type contextKey struct{}
-
-var userIDKey contextKey
-
 func WithUserSubject(ctx context.Context, userID uuid.UUID) context.Context {
-	return context.WithValue(ctx, userIDKey, userID)
+	return sharedcongito.WithUserSubject(ctx, userID)
 }
 
 func UserSubjectFromContext(ctx context.Context) (uuid.UUID, bool) {
-	userID, ok := ctx.Value(userIDKey).(uuid.UUID)
-	return userID, ok
+	return sharedcongito.UserSubjectFromContext(ctx)
 }

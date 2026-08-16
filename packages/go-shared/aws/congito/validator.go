@@ -13,9 +13,7 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-func (v *CognitoVerifier) Validate(
-	tokenString string,
-) (*Claims, error) {
+func (v *CognitoVerifier) Validate(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(
 		tokenString,
 		&Claims{},

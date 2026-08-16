@@ -12,7 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/congito"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws/queue"
-	"github.com/wintkhantlin/toolydooly/todo-service/internal/db"
+
 )
 
 func (h *Handler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
@@ -54,9 +54,9 @@ func (h *Handler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
 	event := queue.TodoEvent{
 		Action:    queue.TodoDelete,
 		Timestamp: time.Now(),
-		Payload: db.Todo{
-			ID:     todoID,
-			UserID: todo.UserID,
+		Payload: queue.TodoPayload{
+			ID:     todoID.String(),
+			UserID: todo.UserID.String(),
 		},
 	}
 
@@ -68,6 +68,7 @@ func (h *Handler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
 
 	message := string(payload)
 
+	// send to todo processing queue
 	_, err = h.Queue.SendMessage(
 		r.Context(),
 		&sqs.SendMessageInput{
@@ -80,6 +81,19 @@ func (h *Handler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "failed to send message", http.StatusInternalServerError)
 		return
+	}
+
+	// also publish to realtime queue if configured
+	_, err = h.Queue.SendMessage(
+		r.Context(),
+		&sqs.SendMessageInput{
+			QueueUrl:       &h.AppCfg.RealtimeQueueURL,
+			MessageBody:    &message,
+			MessageGroupId: aws.String(sub.String()),
+		},
+	)
+	if err != nil {
+		// don't fail the request if realtime publish fails; just log
 	}
 
 	w.WriteHeader(http.StatusAccepted)

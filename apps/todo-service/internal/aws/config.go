@@ -17,15 +17,20 @@ func getEnv(key, defaultValue string) string {
 }
 
 type AppConfig struct {
-	TodoQueueURL string
+	TodoQueueURL     string
+	RealtimeQueueURL string
 }
 
 func NewAppConfig(s *secretsmanager.Client) *AppConfig {
 	var queue secrets.Queue
+	var realtime secrets.Queue
 
 	secrets.Get(*s, context.Background(), "todo/sqs/master", &queue)
+	// Realtime queue secret is optional in case infra hasn't created it yet for local dev
+	_ = secrets.Get(*s, context.Background(), "realtime/sqs/master", &realtime)
 
 	return &AppConfig{
-		TodoQueueURL: queue.QueueURL,
+		TodoQueueURL:     queue.QueueURL,
+		RealtimeQueueURL: realtime.QueueURL,
 	}
 }

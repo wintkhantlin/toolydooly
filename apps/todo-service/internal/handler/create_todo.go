@@ -53,7 +53,11 @@ func (h *Handler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 	event := queue.TodoEvent{
 		Action:    queue.TodoCreate,
 		Timestamp: time.Now(),
-		Payload:   todo,
+		Payload: queue.TodoPayload{
+			Text:     todo.Text,
+			UserID:   todo.UserID.String(),
+			Priority: todo.Priority,
+		},
 	}
 
 	payload, err := json.Marshal(event)
@@ -64,6 +68,7 @@ func (h *Handler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 
 	message := string(payload)
 
+	// send to todo processing queue
 	_, err = h.Queue.SendMessage(
 		r.Context(),
 		&sqs.SendMessageInput{
@@ -76,6 +81,22 @@ func (h *Handler) CreateTodo(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "failed to send message", http.StatusInternalServerError)
 		return
+	}
+
+	// publish to realtime queue only if configured
+	if h.AppCfg.RealtimeQueueURL != "" {
+		_, err = h.Queue.SendMessage(
+			r.Context(),
+			&sqs.SendMessageInput{
+				QueueUrl:       &h.AppCfg.RealtimeQueueURL,
+				MessageBody:    &message,
+				MessageGroupId: aws.String(sub.String()),
+			},
+		)
+
+		if err != nil {
+			// don't fail the request if realtime publish fails; just swallow
+		}
 	}
 
 	w.WriteHeader(http.StatusAccepted)
