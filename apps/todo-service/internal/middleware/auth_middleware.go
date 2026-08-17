@@ -6,7 +6,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/wintkhantlin/toolydooly/shared/aws/congito"
-	"github.com/wintkhantlin/toolydooly/todo-service/internal/handler"
 )
 
 func AuthMiddleware(
@@ -14,7 +13,7 @@ func AuthMiddleware(
 	next http.Handler,
 ) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		token, err := handler.ExtractBearerToken(r)
+		token, err := congito.ExtractBearerToken(r)
 		if err != nil {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return

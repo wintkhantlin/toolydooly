@@ -2,19 +2,11 @@ package aws
 
 import (
 	"context"
-	"os"
+	"log"
 
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
-	"github.com/wintkhantlin/toolydooly/shared/aws/secrets"
+	sharedsecrets "github.com/wintkhantlin/toolydooly/shared/aws/secrets"
 )
-
-func getEnv(key, defaultValue string) string {
-	if value, exists := os.LookupEnv(key); exists {
-		return value
-	}
-
-	return defaultValue
-}
 
 type AppConfig struct {
 	TodoQueueURL     string
@@ -22,12 +14,14 @@ type AppConfig struct {
 }
 
 func NewAppConfig(s *secretsmanager.Client) *AppConfig {
-	var queue secrets.Queue
-	var realtime secrets.Queue
+	var queue sharedsecrets.Queue
+	var realtime sharedsecrets.Queue
 
-	secrets.Get(*s, context.Background(), "todo/sqs/master", &queue)
+	if err := sharedsecrets.Get(*s, context.Background(), "todo/sqs/master", &queue); err != nil {
+		log.Printf("load todo queue config: %v", err)
+	}
 	// Realtime queue secret is optional in case infra hasn't created it yet for local dev
-	_ = secrets.Get(*s, context.Background(), "realtime/sqs/master", &realtime)
+	_ = sharedsecrets.Get(*s, context.Background(), "realtime/sqs/master", &realtime)
 
 	return &AppConfig{
 		TodoQueueURL:     queue.QueueURL,

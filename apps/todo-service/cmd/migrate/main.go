@@ -10,23 +10,23 @@ import (
 	"github.com/golang-migrate/migrate/v4/database/pgx"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/jackc/pgx/v5/stdlib"
-	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws"
-	"github.com/wintkhantlin/toolydooly/shared/aws/secrets"
+	sharedaws "github.com/wintkhantlin/toolydooly/shared/aws"
+	sharedsecrets "github.com/wintkhantlin/toolydooly/shared/aws/secrets"
 )
 
 func main() {
 	ctx := context.Background()
 
-	config, err := aws.NewAWSConfig()
-	secret := secrets.New(config)
-
+	config, err := sharedaws.NewAWSConfig()
 	if err != nil {
 		panic(err)
 	}
 
-	var db secrets.Database
+	secret := sharedsecrets.New(config)
 
-	if err := secrets.Get(*secret, ctx, "todo/db/master", &db); err != nil {
+	var db sharedsecrets.Database
+
+	if err := sharedsecrets.Get(*secret, ctx, "todo/db/master", &db); err != nil {
 		panic(err)
 	}
 

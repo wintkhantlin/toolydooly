@@ -4,9 +4,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/aws"
+	sharedaws "github.com/wintkhantlin/toolydooly/shared/aws"
 	"github.com/wintkhantlin/toolydooly/shared/aws/congito"
-	"github.com/wintkhantlin/toolydooly/shared/aws/queue"
-	"github.com/wintkhantlin/toolydooly/shared/aws/secrets"
+	sharedqueue "github.com/wintkhantlin/toolydooly/shared/aws/queue"
+	sharedsecrets "github.com/wintkhantlin/toolydooly/shared/aws/secrets"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/consumer"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/db"
 	"github.com/wintkhantlin/toolydooly/todo-service/internal/handler"
@@ -18,11 +19,11 @@ func main() {
 		fx.Provide(
 			chi.NewRouter,
 			aws.NewAppConfig,
-			aws.NewAWSConfig,
+			sharedaws.NewAWSConfig,
 
-			secrets.New,
+			sharedsecrets.New,
 
-			queue.NewSQSClient,
+			sharedqueue.NewSQSClient,
 
 			db.NewDatabase,
 			db.NewDBTX,

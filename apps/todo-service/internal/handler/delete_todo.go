@@ -12,7 +12,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/wintkhantlin/toolydooly/shared/aws/congito"
 	"github.com/wintkhantlin/toolydooly/shared/aws/queue"
-
 )
 
 func (h *Handler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
@@ -83,17 +82,20 @@ func (h *Handler) DeleteTodo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// also publish to realtime queue if configured
-	_, err = h.Queue.SendMessage(
-		r.Context(),
-		&sqs.SendMessageInput{
-			QueueUrl:       &h.AppCfg.RealtimeQueueURL,
-			MessageBody:    &message,
-			MessageGroupId: aws.String(sub.String()),
-		},
-	)
-	if err != nil {
-		// don't fail the request if realtime publish fails; just log
+	// publish to realtime queue only if configured
+	if h.AppCfg.RealtimeQueueURL != "" {
+		_, err = h.Queue.SendMessage(
+			r.Context(),
+			&sqs.SendMessageInput{
+				QueueUrl:       &h.AppCfg.RealtimeQueueURL,
+				MessageBody:    &message,
+				MessageGroupId: aws.String(sub.String()),
+			},
+		)
+
+		if err != nil {
+			// don't fail the request if realtime publish fails; just swallow
+		}
 	}
 
 	w.WriteHeader(http.StatusAccepted)
